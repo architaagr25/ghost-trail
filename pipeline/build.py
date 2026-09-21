@@ -29,7 +29,28 @@ MINIMAP_QUALITY = 88
 # tool offers, and dropping the rest shrinks the payload substantially.
 COORD_PRECISION = 1
 
+# Positions are normally sampled every 5 seconds, but a small number of journeys
+# have long stretches with nothing recorded -- the worst runs over eight minutes.
+# Joining across one of those draws a straight line through terrain the player
+# may never have crossed, so the trail is broken instead. Six times the nominal
+# sample interval is well clear of ordinary jitter, which reaches 25s at the
+# 99th percentile.
+TRAIL_GAP_SECONDS = 30
+
 Image.MAX_IMAGE_PIXELS = None
+
+
+def find_gaps(times: list[int]) -> list[int]:
+    """Indices where a trail should be cut because recording dropped out.
+
+    Each returned index is the first point of a new segment, so the renderer can
+    lift the pen rather than bridging a gap it has no data for.
+    """
+    return [
+        i
+        for i in range(1, len(times))
+        if times[i] - times[i - 1] > TRAIL_GAP_SECONDS
+    ]
 
 
 def build_map_payload(map_key: str, rows: pd.DataFrame) -> dict:
@@ -80,15 +101,17 @@ def build_map_payload(map_key: str, rows: pd.DataFrame) -> dict:
             player_idx = len(players)
             trail = player_rows[player_rows["is_position"]]
 
+            times = [int(v - start) for v in trail["t"]]
             players.append(
                 {
                     "m": match_idx,
                     "u": user_id,
                     "b": int(bool(player_rows["is_bot"].iloc[0])),
                     # Seconds from match start, so playback needs no date math.
-                    "t": [int(v - start) for v in trail["t"]],
+                    "t": times,
                     "x": [round(float(v), COORD_PRECISION) for v in trail["x"]],
                     "z": [round(float(v), COORD_PRECISION) for v in trail["z"]],
+                    "breaks": find_gaps(times),
                 }
             )
 

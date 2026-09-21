@@ -52,6 +52,11 @@ export interface PlayerTrail {
   t: number[]
   x: number[]
   z: number[]
+  /**
+   * Indices where recording dropped out and the trail must be cut rather than
+   * bridged. Each index is the first point of a new segment.
+   */
+  breaks: number[]
 }
 
 export type EventCategory = 'kill' | 'death' | 'loot' | 'storm'

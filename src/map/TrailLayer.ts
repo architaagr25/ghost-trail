@@ -64,9 +64,15 @@ export class TrailLayer {
       const { x, z } = trail
       if (x.length < 2) continue
 
+      const breaks = new Set(trail.breaks)
       g.moveTo(this.projection.x(x[0]), this.projection.y(z[0]))
       for (let i = 1; i < x.length; i += 1) {
-        g.lineTo(this.projection.x(x[i]), this.projection.y(z[i]))
+        const px = this.projection.x(x[i])
+        const py = this.projection.y(z[i])
+        // Lift the pen across a recording gap instead of inventing a path
+        // through terrain the player may never have crossed.
+        if (breaks.has(i)) g.moveTo(px, py)
+        else g.lineTo(px, py)
       }
       g.stroke({
         width: TRAIL_WIDTH / this.zoom,
