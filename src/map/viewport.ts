@@ -105,6 +105,20 @@ export class Viewport {
     return this.dragging
   }
 
+  /**
+   * Screen position to map space, the inverse of the container transform.
+   * Hit testing works in map units so it stays independent of zoom.
+   */
+  toMap(screenX: number, screenY: number): [number, number] {
+    const scale = this.scale
+    return [(screenX - this.originX) / scale, (screenY - this.originY) / scale]
+  }
+
+  /** Map-space distance covered by one screen pixel, for hit radii. */
+  get unitsPerPixel(): number {
+    return 1 / this.scale
+  }
+
   /** Screen position of the map's top-left corner before panning. */
   private get centreX(): number {
     return (this.size.width - MAP_SIZE * this.scale) / 2

@@ -18,14 +18,9 @@
   --color-signal: #2ce8d5;
   --color-signal-dim: #17786f;
 
-  /* Event + actor colors. These are the single source of truth: the Pixi
-     layers read them through readCssColor() so canvas and DOM never drift. */
-  --color-human: #2ce8d5;
-  --color-bot: #f0a12e;
-  --color-kill: #ff4d5e;
-  --color-death: #ff2e6d;
-  --color-loot: #b46bff;
-  --color-storm: #ff7a3d;
+  /* Trail and event colours are not here. They live in src/map/style.ts, which
+     both the canvas layers and the DOM legend read, so the two cannot drift. */
+  --color-alert: #ff2f45;
 
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }

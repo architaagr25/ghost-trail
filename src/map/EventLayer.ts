@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js'
 import type { EventCategory, GameEvent } from '../lib/types'
 import type { Projection } from './projection'
-import { EVENT_COLOR, MARKER_RADIUS } from './style'
+import { EVENT_COLOR, MARKER_OUTLINE, MARKER_RADIUS } from './style'
 
 /** Painted back to front, so rarer and more urgent events land on top. */
 const DRAW_ORDER: EventCategory[] = ['loot', 'death', 'kill', 'storm']
@@ -75,7 +75,10 @@ export class EventLayer {
         drawMarker(g, category, x, y, radius)
       }
 
-      g.fill({ color: EVENT_COLOR[category], alpha: 0.9 })
+      // Fill then outline in one pass each. The outline separates the marker
+      // from whatever trail runs underneath it.
+      g.fill({ color: EVENT_COLOR[category], alpha: 0.95 })
+      g.stroke({ width: 1.1 / this.zoom, color: MARKER_OUTLINE, alpha: 0.85 })
     }
   }
 
@@ -99,10 +102,25 @@ function drawMarker(
       g.poly([x, y - r, x + thin, y - thin, x + r, y, x + thin, y + thin, x, y + r, x - thin, y + thin, x - r, y, x - thin, y - thin])
       return
     }
-    // A square, reading as a hard stop against the kill burst.
-    case 'death':
-      g.rect(x - r * 0.75, y - r * 0.75, r * 1.5, r * 1.5)
+    // A cross. Read against the kill burst it is the opposite silhouette:
+    // arms on the diagonals rather than on the axes.
+    case 'death': {
+      const arm = r * 0.95
+      const half = r * 0.3
+      for (const [dx, dy] of [
+        [1, 1],
+        [1, -1],
+      ] as const) {
+        // Two crossed bars, each a quad along one diagonal.
+        g.poly([
+          x - arm * dx - half * dy, y - arm * dy + half * dx,
+          x - arm * dx + half * dy, y - arm * dy - half * dx,
+          x + arm * dx + half * dy, y + arm * dy - half * dx,
+          x + arm * dx - half * dy, y + arm * dy + half * dx,
+        ])
+      }
       return
+    }
     // A diamond: quieter, and there are far more of these than anything else.
     case 'loot':
       g.poly([x, y - r * 0.85, x + r * 0.85, y, x, y + r * 0.85, x - r * 0.85, y])

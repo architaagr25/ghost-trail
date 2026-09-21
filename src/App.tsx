@@ -43,7 +43,7 @@ export default function App() {
 
       <main className="min-h-0 flex-1">
         {error && (
-          <p className="grid h-full place-items-center px-8 text-center text-sm text-kill">{error}</p>
+          <p className="grid h-full place-items-center px-8 text-center text-sm text-alert">{error}</p>
         )}
         {!error && !map && (
           <p className="grid h-full place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">

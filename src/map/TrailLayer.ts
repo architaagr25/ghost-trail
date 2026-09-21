@@ -5,10 +5,10 @@ import type { Projection } from './projection'
 import { COLORS } from './style'
 
 /** Widths and opacities in screen pixels, held steady as the viewport zooms. */
-const HUMAN_WIDTH = 1.6
-const HUMAN_ALPHA = 0.7
-const BOT_WIDTH = 1.1
-const BOT_ALPHA = 0.45
+const HUMAN_WIDTH = 1.3
+const HUMAN_ALPHA = 0.34
+const BOT_WIDTH = 1
+const BOT_ALPHA = 0.26
 const BOT_DASH = 6
 const BOT_GAP = 5
 
@@ -20,6 +20,11 @@ const BOT_GAP = 5
  * Beyond the cap dashes simply grow on screen, which still reads as dashed.
  */
 const MAX_DASH_ZOOM = 4
+
+/** How far unselected trails fade back once a player is picked out. */
+const UNSELECTED_FADE = 0.22
+const SELECTED_WIDTH = 2.4
+const SELECTED_ALPHA = 1
 
 /**
  * Draws player movement paths, with bots visually separated from humans.
@@ -40,15 +45,24 @@ export class TrailLayer {
 
   private readonly botGraphics = new Graphics()
   private readonly humanGraphics = new Graphics()
+  private readonly selectedGraphics = new Graphics()
   private readonly projection: Projection
   private trails: PlayerTrail[] = []
+  private selected: number | null = null
   private zoom = 1
   private queued = false
 
   constructor(projection: Projection) {
     this.projection = projection
-    // Order matters: bots first so humans draw over them.
-    this.view.addChild(this.botGraphics, this.humanGraphics)
+    // Order matters: bots, then humans, then whoever is selected on top.
+    this.view.addChild(this.botGraphics, this.humanGraphics, this.selectedGraphics)
+  }
+
+  /** Index into the trail array, or null to clear. */
+  setSelection(index: number | null): void {
+    if (index === this.selected) return
+    this.selected = index
+    this.schedule()
   }
 
   setTrails(trails: PlayerTrail[]): void {
@@ -78,16 +92,39 @@ export class TrailLayer {
   private draw(): void {
     this.humanGraphics.clear()
     this.botGraphics.clear()
+    this.selectedGraphics.clear()
 
-    for (const trail of this.trails) {
-      if (trail.x.length < 2) continue
-      if (trail.b) this.drawBot(trail)
-      else this.drawHuman(trail)
+    // Everything else recedes while one player is picked out, so the selected
+    // route stays readable through the crowd it is drawn over.
+    const fade = this.selected === null ? 1 : UNSELECTED_FADE
+
+    this.trails.forEach((trail, index) => {
+      if (trail.x.length < 2) return
+      if (index === this.selected) return
+      if (trail.b) this.drawBot(trail, fade)
+      else this.drawHuman(trail, fade)
+    })
+
+    if (this.selected !== null) {
+      const trail = this.trails[this.selected]
+      if (trail && trail.x.length > 1) this.drawSelected(trail)
     }
   }
 
-  private drawHuman(trail: PlayerTrail): void {
-    const g = this.humanGraphics
+  private drawSelected(trail: PlayerTrail): void {
+    const g = this.selectedGraphics
+    this.tracePath(g, trail)
+    g.stroke({
+      width: SELECTED_WIDTH / this.zoom,
+      color: trail.b ? COLORS.bot : COLORS.human,
+      alpha: SELECTED_ALPHA,
+      cap: 'round',
+      join: 'round',
+    })
+  }
+
+  /** Lays down a trail's path, lifting the pen across recording gaps. */
+  private tracePath(g: Graphics, trail: PlayerTrail): void {
     const { x, z } = trail
     const breaks = new Set(trail.breaks)
 
@@ -95,22 +132,25 @@ export class TrailLayer {
     for (let i = 1; i < x.length; i += 1) {
       const px = this.projection.x(x[i])
       const py = this.projection.y(z[i])
-      // Lift the pen across a recording gap instead of inventing a path
-      // through terrain the player may never have crossed.
+      // Do not invent a path through terrain the player may never have crossed.
       if (breaks.has(i)) g.moveTo(px, py)
       else g.lineTo(px, py)
     }
+  }
 
+  private drawHuman(trail: PlayerTrail, fade: number): void {
+    const g = this.humanGraphics
+    this.tracePath(g, trail)
     g.stroke({
       width: HUMAN_WIDTH / this.zoom,
       color: COLORS.human,
-      alpha: HUMAN_ALPHA,
+      alpha: HUMAN_ALPHA * fade,
       cap: 'round',
       join: 'round',
     })
   }
 
-  private drawBot(trail: PlayerTrail): void {
+  private drawBot(trail: PlayerTrail, fade: number): void {
     const g = this.botGraphics
 
     // Dashes are measured in screen pixels, so the pattern is divided by the
@@ -126,7 +166,7 @@ export class TrailLayer {
     g.stroke({
       width: BOT_WIDTH / this.zoom,
       color: COLORS.bot,
-      alpha: BOT_ALPHA,
+      alpha: BOT_ALPHA * fade,
       cap: 'butt',
     })
   }

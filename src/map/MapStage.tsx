@@ -1,12 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { Application, Assets, Container, Sprite, Texture } from 'pixi.js'
 import { Crosshair, Minus, Plus } from 'lucide-react'
+import { Legend } from '../panels/Legend'
 import type { MapData } from '../lib/types'
 import { MAP_SIZE } from './constants'
 import { EventLayer } from './EventLayer'
+import { HitIndex } from './hitTest'
 import { Projection } from './projection'
 import { TrailLayer } from './TrailLayer'
 import { Viewport } from './viewport'
+import { MapTooltip, type HoverTarget } from '../panels/MapTooltip'
+import { SelectionChip } from '../panels/SelectionChip'
+
+/** Pointer slack in screen pixels when picking a marker or a trail. */
+const EVENT_GRAB = 7
+const TRAIL_GRAB = 5
+
+/** A drag beyond this many pixels is a pan, not a click. */
+const CLICK_SLOP = 4
 
 interface MapStageProps {
   data: MapData
@@ -25,8 +36,13 @@ interface MapStageProps {
 export function MapStage({ data }: MapStageProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<Viewport | null>(null)
+  const hitRef = useRef<HitIndex | null>(null)
+  const trailsRef = useRef<TrailLayer | null>(null)
+  const pressRef = useRef<{ x: number; y: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
+  const [hover, setHover] = useState<HoverTarget | null>(null)
+  const [selected, setSelected] = useState<number | null>(null)
 
   useEffect(() => {
     const host = hostRef.current
@@ -74,6 +90,9 @@ export function MapStage({ data }: MapStageProps) {
       const trails = new TrailLayer(projection)
       trails.setTrails(data.players)
       world.addChild(trails.view)
+      trailsRef.current = trails
+
+      hitRef.current = new HitIndex(projection, data.players, data.events)
 
       const events = new EventLayer(projection)
       events.setEvents(data.events)
@@ -121,12 +140,72 @@ export function MapStage({ data }: MapStageProps) {
       cancelled = true
       cleanup?.()
       viewportRef.current = null
+      hitRef.current = null
+      trailsRef.current = null
       app?.destroy(true, { children: true })
       app = null
     }
   }, [data])
 
+  useEffect(() => {
+    trailsRef.current?.setSelection(selected)
+  }, [selected, ready])
+
+  // A new map means the previous map's indices mean nothing.
+  useEffect(() => {
+    setSelected(null)
+    setHover(null)
+  }, [data])
+
   const viewport = () => viewportRef.current
+
+  /** Pointer position relative to the stage, in CSS pixels. */
+  function localPoint(event: React.PointerEvent): [number, number] {
+    const rect = event.currentTarget.getBoundingClientRect()
+    return [event.clientX - rect.left, event.clientY - rect.top]
+  }
+
+  function updateHover(event: React.PointerEvent): void {
+    const view = viewportRef.current
+    const hits = hitRef.current
+    if (!view || !hits || view.isDragging) {
+      if (hover) setHover(null)
+      return
+    }
+
+    const [localX, localY] = localPoint(event)
+    const [mapX, mapY] = view.toMap(localX, localY)
+    const found = hits.eventAt(mapX, mapY, EVENT_GRAB * view.unitsPerPixel)
+
+    if (!found) {
+      if (hover) setHover(null)
+      return
+    }
+    if (hover?.event === found) return
+
+    setHover({ event: found, player: data.players[found.p], x: localX, y: localY })
+  }
+
+  function pick(event: React.PointerEvent): void {
+    const view = viewportRef.current
+    const hits = hitRef.current
+    if (!view || !hits) return
+
+    const [localX, localY] = localPoint(event)
+    const [mapX, mapY] = view.toMap(localX, localY)
+
+    // An event marker resolves to the player it belongs to, so clicking a kill
+    // pulls up the journey that produced it.
+    const marker = hits.eventAt(mapX, mapY, EVENT_GRAB * view.unitsPerPixel)
+    if (marker) {
+      setSelected(marker.p)
+      return
+    }
+
+    const player = hits.playerAt(mapX, mapY, TRAIL_GRAB * view.unitsPerPixel)
+    // Clicking bare ground clears, which is the obvious way out.
+    setSelected(player)
+  }
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-void">
@@ -135,14 +214,30 @@ export function MapStage({ data }: MapStageProps) {
         className="h-full w-full cursor-grab active:cursor-grabbing"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
+          pressRef.current = { x: event.clientX, y: event.clientY }
           viewport()?.beginDrag(event.clientX, event.clientY)
         }}
-        onPointerMove={(event) => viewport()?.drag(event.clientX, event.clientY)}
+        onPointerMove={(event) => {
+          viewport()?.drag(event.clientX, event.clientY)
+          updateHover(event)
+        }}
         onPointerUp={(event) => {
           event.currentTarget.releasePointerCapture(event.pointerId)
           viewport()?.endDrag()
+
+          // Panning ends on the same pointerup as a click would. Only treat it
+          // as a pick if the pointer barely moved.
+          const press = pressRef.current
+          pressRef.current = null
+          if (!press) return
+          const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y)
+          if (moved <= CLICK_SLOP) pick(event)
         }}
-        onPointerLeave={() => viewport()?.endDrag()}
+        onPointerLeave={() => {
+          viewport()?.endDrag()
+          pressRef.current = null
+          setHover(null)
+        }}
       />
 
       <div className="pointer-events-none absolute left-6 top-5 select-none">
@@ -164,6 +259,14 @@ export function MapStage({ data }: MapStageProps) {
         </div>
       )}
 
+      {hover && <MapTooltip target={hover} />}
+
+      {selected !== null && data.players[selected] && (
+        <SelectionChip player={data.players[selected]} onClear={() => setSelected(null)} />
+      )}
+
+      {ready && <Legend />}
+
       {!ready && !error && (
         <p className="absolute inset-0 grid place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">
           Loading map
@@ -171,7 +274,7 @@ export function MapStage({ data }: MapStageProps) {
       )}
 
       {error && (
-        <p className="absolute inset-0 grid place-items-center px-8 text-center text-sm text-kill">
+        <p className="absolute inset-0 grid place-items-center px-8 text-center text-sm text-alert">
           {error}
         </p>
       )}
