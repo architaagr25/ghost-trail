@@ -50,7 +50,7 @@ export default function App() {
             Loading telemetry
           </p>
         )}
-        {map && <MapStage image={map.image} label={map.label} />}
+        {map && <MapStage data={map} />}
       </main>
     </div>
   )

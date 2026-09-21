@@ -23,11 +23,13 @@ export class Viewport {
   private lastY = 0
 
   private readonly world: Container
+  private readonly onChange: (zoom: number) => void
   private size: Size
 
-  constructor(world: Container, size: Size) {
+  constructor(world: Container, size: Size, onChange: (zoom: number) => void = () => {}) {
     this.world = world
     this.size = size
+    this.onChange = onChange
   }
 
   /** Scale at which the whole map just fits inside the shorter viewport axis. */
@@ -124,6 +126,7 @@ export class Viewport {
     this.clampPan()
     this.world.scale.set(this.scale)
     this.world.position.set(this.originX, this.originY)
+    this.onChange(this.zoom)
   }
 
   /**

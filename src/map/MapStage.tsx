@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Application, Assets, Container, Sprite, Texture } from 'pixi.js'
 import { Crosshair, Minus, Plus } from 'lucide-react'
+import type { MapData } from '../lib/types'
 import { MAP_SIZE } from './constants'
+import { Projection } from './projection'
+import { TrailLayer } from './TrailLayer'
 import { Viewport } from './viewport'
 
 interface MapStageProps {
-  /** URL of the minimap image for the active map. */
-  image: string
-  label: string
+  data: MapData
 }
 
 /**
@@ -20,7 +21,7 @@ interface MapStageProps {
  * Layers are added to a single `world` container that the viewport transforms,
  * so every future layer inherits pan and zoom for free.
  */
-export function MapStage({ image, label }: MapStageProps) {
+export function MapStage({ data }: MapStageProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<Viewport | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +58,7 @@ export function MapStage({ image, label }: MapStageProps) {
       const world = new Container()
       instance.stage.addChild(world)
 
-      const texture = await Assets.load<Texture>(image)
+      const texture = await Assets.load<Texture>(data.image)
       if (cancelled) return
 
       const minimap = new Sprite(texture)
@@ -67,10 +68,16 @@ export function MapStage({ image, label }: MapStageProps) {
       minimap.height = MAP_SIZE
       world.addChild(minimap)
 
-      const viewport = new Viewport(world, {
-        width: host.clientWidth,
-        height: host.clientHeight,
-      })
+      const trails = new TrailLayer(new Projection(data.config))
+      trails.setTrails(data.players)
+      world.addChild(trails.view)
+
+      const viewport = new Viewport(
+        world,
+        { width: host.clientWidth, height: host.clientHeight },
+        // Keep stroke widths constant on screen as the viewport scales.
+        (zoom) => trails.setZoom(zoom),
+      )
       viewport.reset()
       viewportRef.current = viewport
       setReady(true)
@@ -107,7 +114,7 @@ export function MapStage({ image, label }: MapStageProps) {
       app?.destroy(true, { children: true })
       app = null
     }
-  }, [image])
+  }, [data])
 
   const viewport = () => viewportRef.current
 
@@ -130,7 +137,7 @@ export function MapStage({ image, label }: MapStageProps) {
 
       <div className="pointer-events-none absolute left-6 top-5 select-none">
         <p className="text-[10px] uppercase tracking-[0.25em] text-ink-faint">Map sector</p>
-        <h2 className="text-xl font-medium tracking-wide text-ink">{label}</h2>
+        <h2 className="text-xl font-medium tracking-wide text-ink">{data.label}</h2>
       </div>
 
       {ready && (
