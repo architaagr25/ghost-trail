@@ -1,27 +1,45 @@
 import { Container, Graphics } from 'pixi.js'
 import type { PlayerTrail } from '../lib/types'
+import { walkDashes } from './dash'
 import type { Projection } from './projection'
+import { COLORS } from './style'
 
-/** Stroke width in screen pixels, held constant as the viewport zooms. */
-const TRAIL_WIDTH = 1.4
-const TRAIL_ALPHA = 0.55
-const TRAIL_COLOR = 0x2ce8d5
+/** Widths and opacities in screen pixels, held steady as the viewport zooms. */
+const HUMAN_WIDTH = 1.6
+const HUMAN_ALPHA = 0.7
+const BOT_WIDTH = 1.1
+const BOT_ALPHA = 0.45
+const BOT_DASH = 6
+const BOT_GAP = 5
 
 /**
- * Draws player movement paths.
+ * Dash length is normally held constant on screen, which means dividing by the
+ * zoom factor. Past this zoom that division is capped: the dashes would keep
+ * shrinking in map space while the full set of trails is still being drawn,
+ * generating hundreds of thousands of tiny segments for no visible gain.
+ * Beyond the cap dashes simply grow on screen, which still reads as dashed.
+ */
+const MAX_DASH_ZOOM = 4
+
+/**
+ * Draws player movement paths, with bots visually separated from humans.
  *
- * Every trail goes into a single Graphics object. Pixi batches one object's
- * strokes into very few draw calls, where a Graphics per player would mean
- * hundreds of them and a visible stall on the busier maps.
+ * Humans are solid cyan and sit on top; bots are a dashed, dimmer amber
+ * underneath. Bots outnumber humans in most matches, so drawing them beneath
+ * and at lower contrast keeps the human routes -- the ones a designer is
+ * usually reading -- legible through the crowd. The two differ in colour,
+ * weight and line style, so neither colour blindness nor a dense overlap makes
+ * them ambiguous.
  *
- * Stroke width is divided by the zoom factor so lines keep the same thickness
- * on screen at every zoom level. Without that, paths turn into thick slabs when
- * you zoom into a building and the detail you zoomed in for disappears.
+ * Humans and bots get one Graphics each rather than one per player: Pixi
+ * batches within an object, so this is a handful of draw calls instead of
+ * hundreds.
  */
 export class TrailLayer {
   readonly view = new Container()
 
-  private readonly graphics = new Graphics()
+  private readonly botGraphics = new Graphics()
+  private readonly humanGraphics = new Graphics()
   private readonly projection: Projection
   private trails: PlayerTrail[] = []
   private zoom = 1
@@ -29,7 +47,8 @@ export class TrailLayer {
 
   constructor(projection: Projection) {
     this.projection = projection
-    this.view.addChild(this.graphics)
+    // Order matters: bots first so humans draw over them.
+    this.view.addChild(this.botGraphics, this.humanGraphics)
   }
 
   setTrails(trails: PlayerTrail[]): void {
@@ -57,31 +76,74 @@ export class TrailLayer {
   }
 
   private draw(): void {
-    const g = this.graphics
-    g.clear()
+    this.humanGraphics.clear()
+    this.botGraphics.clear()
 
     for (const trail of this.trails) {
-      const { x, z } = trail
-      if (x.length < 2) continue
+      if (trail.x.length < 2) continue
+      if (trail.b) this.drawBot(trail)
+      else this.drawHuman(trail)
+    }
+  }
 
-      const breaks = new Set(trail.breaks)
-      g.moveTo(this.projection.x(x[0]), this.projection.y(z[0]))
-      for (let i = 1; i < x.length; i += 1) {
-        const px = this.projection.x(x[i])
-        const py = this.projection.y(z[i])
-        // Lift the pen across a recording gap instead of inventing a path
-        // through terrain the player may never have crossed.
-        if (breaks.has(i)) g.moveTo(px, py)
-        else g.lineTo(px, py)
-      }
-      g.stroke({
-        width: TRAIL_WIDTH / this.zoom,
-        color: TRAIL_COLOR,
-        alpha: TRAIL_ALPHA,
-        cap: 'round',
-        join: 'round',
+  private drawHuman(trail: PlayerTrail): void {
+    const g = this.humanGraphics
+    const { x, z } = trail
+    const breaks = new Set(trail.breaks)
+
+    g.moveTo(this.projection.x(x[0]), this.projection.y(z[0]))
+    for (let i = 1; i < x.length; i += 1) {
+      const px = this.projection.x(x[i])
+      const py = this.projection.y(z[i])
+      // Lift the pen across a recording gap instead of inventing a path
+      // through terrain the player may never have crossed.
+      if (breaks.has(i)) g.moveTo(px, py)
+      else g.lineTo(px, py)
+    }
+
+    g.stroke({
+      width: HUMAN_WIDTH / this.zoom,
+      color: COLORS.human,
+      alpha: HUMAN_ALPHA,
+      cap: 'round',
+      join: 'round',
+    })
+  }
+
+  private drawBot(trail: PlayerTrail): void {
+    const g = this.botGraphics
+
+    // Dashes are measured in screen pixels, so the pattern is divided by the
+    // zoom factor along with the stroke width -- up to the cap.
+    const dashZoom = Math.min(this.zoom, MAX_DASH_ZOOM)
+    for (const run of this.segments(trail)) {
+      walkDashes(run, BOT_DASH / dashZoom, BOT_GAP / dashZoom, (x1, y1, x2, y2) => {
+        g.moveTo(x1, y1)
+        g.lineTo(x2, y2)
       })
     }
+
+    g.stroke({
+      width: BOT_WIDTH / this.zoom,
+      color: COLORS.bot,
+      alpha: BOT_ALPHA,
+      cap: 'butt',
+    })
+  }
+
+  /** Splits a trail into the runs between recording gaps, in map space. */
+  private segments(trail: PlayerTrail): Array<Array<[number, number]>> {
+    const bounds = [0, ...trail.breaks, trail.x.length]
+    const runs: Array<Array<[number, number]>> = []
+
+    for (let b = 1; b < bounds.length; b += 1) {
+      const run: Array<[number, number]> = []
+      for (let i = bounds[b - 1]; i < bounds[b]; i += 1) {
+        run.push([this.projection.x(trail.x[i]), this.projection.y(trail.z[i])])
+      }
+      if (run.length > 1) runs.push(run)
+    }
+    return runs
   }
 
   destroy(): void {

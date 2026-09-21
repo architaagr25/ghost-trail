@@ -3,6 +3,7 @@ import { Application, Assets, Container, Sprite, Texture } from 'pixi.js'
 import { Crosshair, Minus, Plus } from 'lucide-react'
 import type { MapData } from '../lib/types'
 import { MAP_SIZE } from './constants'
+import { EventLayer } from './EventLayer'
 import { Projection } from './projection'
 import { TrailLayer } from './TrailLayer'
 import { Viewport } from './viewport'
@@ -68,15 +69,24 @@ export function MapStage({ data }: MapStageProps) {
       minimap.height = MAP_SIZE
       world.addChild(minimap)
 
-      const trails = new TrailLayer(new Projection(data.config))
+      const projection = new Projection(data.config)
+
+      const trails = new TrailLayer(projection)
       trails.setTrails(data.players)
       world.addChild(trails.view)
+
+      const events = new EventLayer(projection)
+      events.setEvents(data.events)
+      world.addChild(events.view)
 
       const viewport = new Viewport(
         world,
         { width: host.clientWidth, height: host.clientHeight },
-        // Keep stroke widths constant on screen as the viewport scales.
-        (zoom) => trails.setZoom(zoom),
+        // Keep strokes and markers a constant size on screen as the map scales.
+        (zoom) => {
+          trails.setZoom(zoom)
+          events.setZoom(zoom)
+        },
       )
       viewport.reset()
       viewportRef.current = viewport
