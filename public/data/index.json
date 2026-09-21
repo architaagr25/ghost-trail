@@ -1,0 +1,50 @@
+{
+  "maps": [
+    {
+      "map": "AmbroseValley",
+      "label": "Ambrose Valley",
+      "file": "/data/AmbroseValley.json",
+      "matches": 566,
+      "players": 836,
+      "events": 12259,
+      "dates": [
+        "2026-02-09",
+        "2026-02-10",
+        "2026-02-11",
+        "2026-02-12",
+        "2026-02-13",
+        "2026-02-14"
+      ]
+    },
+    {
+      "map": "GrandRift",
+      "label": "Grand Rift",
+      "file": "/data/GrandRift.json",
+      "matches": 59,
+      "players": 111,
+      "events": 1125,
+      "dates": [
+        "2026-02-10",
+        "2026-02-11",
+        "2026-02-12",
+        "2026-02-13",
+        "2026-02-14"
+      ]
+    },
+    {
+      "map": "Lockdown",
+      "label": "Lockdown",
+      "file": "/data/Lockdown.json",
+      "matches": 171,
+      "players": 295,
+      "events": 2661,
+      "dates": [
+        "2026-02-10",
+        "2026-02-11",
+        "2026-02-12",
+        "2026-02-13",
+        "2026-02-14"
+      ]
+    }
+  ]
+}
