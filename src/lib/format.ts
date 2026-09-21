@@ -13,3 +13,22 @@ export function formatClock(seconds: number): string {
 export function shortId(userId: string): string {
   return userId.includes('-') ? userId.split('-')[0] : userId
 }
+
+/** Epoch seconds as a short local date and time, for labelling matches. */
+export function formatMatchTime(start: number): string {
+  return new Date(start * 1000).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+/** A YYYY-MM-DD date as a short readable label. */
+export function formatDate(date: string): string {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  })
+}

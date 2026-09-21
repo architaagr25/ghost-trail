@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { Application, Assets, Container, Sprite, Texture } from 'pixi.js'
 import { Crosshair, Minus, Plus } from 'lucide-react'
+import type { MapData, PlayerTrail } from '../lib/types'
+import type { Selection } from '../lib/filters'
 import { Legend } from '../panels/Legend'
-import type { MapData } from '../lib/types'
+import { MapTooltip, type HoverTarget } from '../panels/MapTooltip'
+import { SelectionChip } from '../panels/SelectionChip'
 import { MAP_SIZE } from './constants'
 import { EventLayer } from './EventLayer'
 import { HitIndex } from './hitTest'
 import { Projection } from './projection'
 import { TrailLayer } from './TrailLayer'
 import { Viewport } from './viewport'
-import { MapTooltip, type HoverTarget } from '../panels/MapTooltip'
-import { SelectionChip } from '../panels/SelectionChip'
 
 /** Pointer slack in screen pixels when picking a marker or a trail. */
 const EVENT_GRAB = 7
@@ -21,41 +22,53 @@ const CLICK_SLOP = 4
 
 interface MapStageProps {
   data: MapData
+  selection: Selection
+}
+
+interface Scene {
+  app: Application
+  trails: TrailLayer
+  events: EventLayer
+  projection: Projection
+  viewport: Viewport
 }
 
 /**
  * The map canvas.
  *
- * Rendering runs on a WebGL stage rather than SVG or DOM nodes: a busy map can
- * carry tens of thousands of trail points, and only the GPU keeps panning and
- * playback smooth at that count.
+ * Rendering runs on a WebGL stage rather than SVG or DOM nodes: an unfiltered
+ * map carries tens of thousands of trail points, and only the GPU keeps panning
+ * and playback smooth at that count.
  *
- * Layers are added to a single `world` container that the viewport transforms,
- * so every future layer inherits pan and zoom for free.
+ * Setup and data are deliberately split across two effects. Building the Pixi
+ * application and loading the minimap is expensive and depends only on which
+ * map is open; changing a filter just pushes new arrays into the existing
+ * layers, so the view neither flashes nor loses its pan and zoom.
  */
-export function MapStage({ data }: MapStageProps) {
+export function MapStage({ data, selection }: MapStageProps) {
   const hostRef = useRef<HTMLDivElement>(null)
-  const viewportRef = useRef<Viewport | null>(null)
+  const sceneRef = useRef<Scene | null>(null)
   const hitRef = useRef<HitIndex | null>(null)
-  const trailsRef = useRef<TrailLayer | null>(null)
   const pressRef = useRef<{ x: number; y: number } | null>(null)
+
   const [error, setError] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [hover, setHover] = useState<HoverTarget | null>(null)
-  const [selected, setSelected] = useState<number | null>(null)
+  const [selected, setSelected] = useState<PlayerTrail | null>(null)
 
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
 
-    let app: Application | null = null
-    // StrictMode mounts effects twice in development. The init below is async,
-    // so a teardown can land mid-flight; this flag makes that a no-op.
+    // StrictMode mounts effects twice in development and init is async, so a
+    // teardown can land mid-flight; this flag makes that a no-op.
     let cancelled = false
+    let scene: Scene | null = null
+    let cleanup: (() => void) | null = null
 
     async function start(host: HTMLDivElement) {
-      const instance = new Application()
-      await instance.init({
+      const app = new Application()
+      await app.init({
         resizeTo: host,
         antialias: true,
         backgroundAlpha: 0,
@@ -65,38 +78,31 @@ export function MapStage({ data }: MapStageProps) {
         autoDensity: true,
       })
       if (cancelled) {
-        instance.destroy(true)
+        app.destroy(true)
+        return
+      }
+      host.appendChild(app.canvas)
+
+      const world = new Container()
+      app.stage.addChild(world)
+
+      const texture = await Assets.load<Texture>(data.image)
+      if (cancelled) {
+        app.destroy(true, { children: true })
         return
       }
 
-      app = instance
-      host.appendChild(instance.canvas)
-
-      const world = new Container()
-      instance.stage.addChild(world)
-
-      const texture = await Assets.load<Texture>(data.image)
-      if (cancelled) return
-
       const minimap = new Sprite(texture)
-      // Draw the minimap into the fixed logical square so the rest of the app
-      // never has to know the source image resolution.
+      // Draw into the fixed logical square so nothing downstream has to know
+      // the source image resolution.
       minimap.width = MAP_SIZE
       minimap.height = MAP_SIZE
       world.addChild(minimap)
 
       const projection = new Projection(data.config)
-
       const trails = new TrailLayer(projection)
-      trails.setTrails(data.players)
-      world.addChild(trails.view)
-      trailsRef.current = trails
-
-      hitRef.current = new HitIndex(projection, data.players, data.events)
-
       const events = new EventLayer(projection)
-      events.setEvents(data.events)
-      world.addChild(events.view)
+      world.addChild(trails.view, events.view)
 
       const viewport = new Viewport(
         world,
@@ -108,30 +114,32 @@ export function MapStage({ data }: MapStageProps) {
         },
       )
       viewport.reset()
-      viewportRef.current = viewport
+
+      scene = { app, trails, events, projection, viewport }
+      sceneRef.current = scene
       setReady(true)
 
       const observer = new ResizeObserver(() => {
         viewport.resize({ width: host.clientWidth, height: host.clientHeight })
       })
       observer.observe(host)
-      instance.canvas.addEventListener('wheel', onWheel, { passive: false })
-      cleanup = () => {
-        observer.disconnect()
-        instance.canvas.removeEventListener('wheel', onWheel)
-      }
 
       function onWheel(event: WheelEvent) {
         event.preventDefault()
-        const rect = instance.canvas.getBoundingClientRect()
-        // Normalize across mouse wheels and trackpads, which report wildly
+        const rect = app.canvas.getBoundingClientRect()
+        // Normalize across mouse wheels and trackpads, which report very
         // different deltaY magnitudes for the same intent.
         const factor = Math.exp(-event.deltaY * 0.002)
         viewport.zoomBy(factor, event.clientX - rect.left, event.clientY - rect.top)
       }
+      app.canvas.addEventListener('wheel', onWheel, { passive: false })
+
+      cleanup = () => {
+        observer.disconnect()
+        app.canvas.removeEventListener('wheel', onWheel)
+      }
     }
 
-    let cleanup: (() => void) | null = null
     start(host).catch((cause: unknown) => {
       if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause))
     })
@@ -139,25 +147,32 @@ export function MapStage({ data }: MapStageProps) {
     return () => {
       cancelled = true
       cleanup?.()
-      viewportRef.current = null
+      sceneRef.current = null
       hitRef.current = null
-      trailsRef.current = null
-      app?.destroy(true, { children: true })
-      app = null
+      setReady(false)
+      scene?.app.destroy(true, { children: true })
     }
   }, [data])
 
+  // Feed the current selection into the layers and rebuild the hit index.
   useEffect(() => {
-    trailsRef.current?.setSelection(selected)
+    const scene = sceneRef.current
+    if (!scene) return
+
+    scene.trails.setTrails(selection.players)
+    scene.events.setEvents(selection.events)
+    hitRef.current = new HitIndex(scene.projection, selection.players, selection.events)
+
+    // A player filtered out of view must not stay highlighted.
+    setSelected((current) => (current && selection.players.includes(current) ? current : null))
+    setHover(null)
+  }, [selection, ready])
+
+  useEffect(() => {
+    sceneRef.current?.trails.setSelection(selected)
   }, [selected, ready])
 
-  // A new map means the previous map's indices mean nothing.
-  useEffect(() => {
-    setSelected(null)
-    setHover(null)
-  }, [data])
-
-  const viewport = () => viewportRef.current
+  const viewport = () => sceneRef.current?.viewport ?? null
 
   /** Pointer position relative to the stage, in CSS pixels. */
   function localPoint(event: React.PointerEvent): [number, number] {
@@ -166,7 +181,7 @@ export function MapStage({ data }: MapStageProps) {
   }
 
   function updateHover(event: React.PointerEvent): void {
-    const view = viewportRef.current
+    const view = viewport()
     const hits = hitRef.current
     if (!view || !hits || view.isDragging) {
       if (hover) setHover(null)
@@ -183,28 +198,29 @@ export function MapStage({ data }: MapStageProps) {
     }
     if (hover?.event === found) return
 
+    // Events carry an index into the map's full player list, which stays valid
+    // whatever the filters are doing.
     setHover({ event: found, player: data.players[found.p], x: localX, y: localY })
   }
 
   function pick(event: React.PointerEvent): void {
-    const view = viewportRef.current
+    const view = viewport()
     const hits = hitRef.current
     if (!view || !hits) return
 
     const [localX, localY] = localPoint(event)
     const [mapX, mapY] = view.toMap(localX, localY)
 
-    // An event marker resolves to the player it belongs to, so clicking a kill
-    // pulls up the journey that produced it.
+    // A marker resolves to the player it belongs to, so clicking a kill pulls
+    // up the journey that produced it.
     const marker = hits.eventAt(mapX, mapY, EVENT_GRAB * view.unitsPerPixel)
     if (marker) {
-      setSelected(marker.p)
+      setSelected(data.players[marker.p] ?? null)
       return
     }
 
-    const player = hits.playerAt(mapX, mapY, TRAIL_GRAB * view.unitsPerPixel)
     // Clicking bare ground clears, which is the obvious way out.
-    setSelected(player)
+    setSelected(hits.playerAt(mapX, mapY, TRAIL_GRAB * view.unitsPerPixel))
   }
 
   return (
@@ -225,13 +241,14 @@ export function MapStage({ data }: MapStageProps) {
           event.currentTarget.releasePointerCapture(event.pointerId)
           viewport()?.endDrag()
 
-          // Panning ends on the same pointerup as a click would. Only treat it
-          // as a pick if the pointer barely moved.
+          // Panning ends on the same pointerup a click would. Only treat it as
+          // a pick if the pointer barely moved.
           const press = pressRef.current
           pressRef.current = null
           if (!press) return
-          const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y)
-          if (moved <= CLICK_SLOP) pick(event)
+          if (Math.hypot(event.clientX - press.x, event.clientY - press.y) <= CLICK_SLOP) {
+            pick(event)
+          }
         }}
         onPointerLeave={() => {
           viewport()?.endDrag()
@@ -244,6 +261,12 @@ export function MapStage({ data }: MapStageProps) {
         <p className="text-[10px] uppercase tracking-[0.25em] text-ink-faint">Map sector</p>
         <h2 className="text-xl font-medium tracking-wide text-ink">{data.label}</h2>
       </div>
+
+      {hover && <MapTooltip target={hover} />}
+
+      {selected && <SelectionChip player={selected} onClear={() => setSelected(null)} />}
+
+      {ready && <Legend />}
 
       {ready && (
         <div className="absolute right-5 top-5 flex flex-col gap-1.5">
@@ -258,14 +281,6 @@ export function MapStage({ data }: MapStageProps) {
           </StageButton>
         </div>
       )}
-
-      {hover && <MapTooltip target={hover} />}
-
-      {selected !== null && data.players[selected] && (
-        <SelectionChip player={data.players[selected]} onClear={() => setSelected(null)} />
-      )}
-
-      {ready && <Legend />}
 
       {!ready && !error && (
         <p className="absolute inset-0 grid place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">

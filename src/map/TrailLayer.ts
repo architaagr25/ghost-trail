@@ -48,7 +48,7 @@ export class TrailLayer {
   private readonly selectedGraphics = new Graphics()
   private readonly projection: Projection
   private trails: PlayerTrail[] = []
-  private selected: number | null = null
+  private selected: PlayerTrail | null = null
   private zoom = 1
   private queued = false
 
@@ -58,10 +58,15 @@ export class TrailLayer {
     this.view.addChild(this.botGraphics, this.humanGraphics, this.selectedGraphics)
   }
 
-  /** Index into the trail array, or null to clear. */
-  setSelection(index: number | null): void {
-    if (index === this.selected) return
-    this.selected = index
+  /**
+   * The selected trail, by identity, or null to clear.
+   *
+   * Identity rather than an index, because filtering rebuilds the array and an
+   * index would then point at a different player.
+   */
+  setSelection(trail: PlayerTrail | null): void {
+    if (trail === this.selected) return
+    this.selected = trail
     this.schedule()
   }
 
@@ -98,17 +103,14 @@ export class TrailLayer {
     // route stays readable through the crowd it is drawn over.
     const fade = this.selected === null ? 1 : UNSELECTED_FADE
 
-    this.trails.forEach((trail, index) => {
-      if (trail.x.length < 2) return
-      if (index === this.selected) return
+    for (const trail of this.trails) {
+      if (trail.x.length < 2) continue
+      if (trail === this.selected) continue
       if (trail.b) this.drawBot(trail, fade)
       else this.drawHuman(trail, fade)
-    })
-
-    if (this.selected !== null) {
-      const trail = this.trails[this.selected]
-      if (trail && trail.x.length > 1) this.drawSelected(trail)
     }
+
+    if (this.selected && this.selected.x.length > 1) this.drawSelected(this.selected)
   }
 
   private drawSelected(trail: PlayerTrail): void {

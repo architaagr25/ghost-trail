@@ -30,11 +30,13 @@ interface Cell {
  * survives panning and zooming untouched.
  */
 export class HitIndex {
+  private readonly players: PlayerTrail[]
   private readonly cells = new Map<number, Cell>()
   private readonly eventPoints: Array<[number, number]> = []
   private readonly playerPoints: Array<Array<[number, number]>> = []
 
   constructor(projection: Projection, players: PlayerTrail[], events: GameEvent[]) {
+    this.players = players
     players.forEach((trail, playerIndex) => {
       const points: Array<[number, number]> = []
       for (let i = 0; i < trail.x.length; i += 1) {
@@ -78,9 +80,9 @@ export class HitIndex {
     return best
   }
 
-  /** Index of the player whose trail passes nearest the point, or null. */
-  playerAt(x: number, y: number, radius: number): number | null {
-    let best: number | null = null
+  /** The trail passing nearest the point, or null. */
+  playerAt(x: number, y: number, radius: number): PlayerTrail | null {
+    let best: PlayerTrail | null = null
     let bestDistance = radius * radius
 
     for (const cell of this.near(x, y, radius)) {
@@ -89,7 +91,7 @@ export class HitIndex {
           const distance = (px - x) ** 2 + (py - y) ** 2
           if (distance < bestDistance) {
             bestDistance = distance
-            best = playerIndex
+            best = this.players[playerIndex]
           }
         }
       }

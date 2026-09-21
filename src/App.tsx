@@ -1,31 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Crosshair } from 'lucide-react'
 import { MapStage } from './map/MapStage'
-import { loadIndex, loadMap } from './lib/data'
-import type { MapData } from './lib/types'
+import { FilterRail } from './panels/FilterRail'
+import { selectData, type Selection } from './lib/filters'
+import { useApp } from './state/store'
+
+const EMPTY: Selection = { matches: [], players: [], events: [], match: null }
 
 export default function App() {
-  const [map, setMap] = useState<MapData | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const init = useApp((state) => state.init)
+  const status = useApp((state) => state.status)
+  const error = useApp((state) => state.error)
+  const mapData = useApp((state) => state.mapData)
+  const date = useApp((state) => state.date)
+  const matchId = useApp((state) => state.matchId)
 
   useEffect(() => {
-    let cancelled = false
-    loadIndex()
-      .then((index) => {
-        const first = index.maps[0]
-        if (!first) throw new Error('No maps found in the data index.')
-        return loadMap(first.file)
-      })
-      .then((data) => {
-        if (!cancelled) setMap(data)
-      })
-      .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause))
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    void init()
+  }, [init])
+
+  const selection = useMemo(
+    () => (mapData ? selectData(mapData, date, matchId) : EMPTY),
+    [mapData, date, matchId],
+  )
 
   return (
     <div className="flex h-full flex-col bg-void">
@@ -41,17 +38,25 @@ export default function App() {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1">
-        {error && (
-          <p className="grid h-full place-items-center px-8 text-center text-sm text-alert">{error}</p>
-        )}
-        {!error && !map && (
-          <p className="grid h-full place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">
-            Loading telemetry
-          </p>
-        )}
-        {map && <MapStage data={map} />}
-      </main>
+      <div className="flex min-h-0 flex-1">
+        <FilterRail selection={selection} />
+
+        <main className="relative min-w-0 flex-1">
+          {error && (
+            <p className="grid h-full place-items-center px-8 text-center text-sm text-alert">
+              {error}
+            </p>
+          )}
+          {!error && status === 'loading' && (
+            <p className="grid h-full place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">
+              Loading telemetry
+            </p>
+          )}
+          {!error && mapData && status === 'ready' && (
+            <MapStage data={mapData} selection={selection} />
+          )}
+        </main>
+      </div>
     </div>
   )
 }
