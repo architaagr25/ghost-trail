@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Application, Assets, Container, Sprite, Texture } from 'pixi.js'
 import { Crosshair, Minus, Plus } from 'lucide-react'
-import type { MapData, PlayerTrail } from '../lib/types'
+import type { MapData } from '../lib/types'
 import type { Selection } from '../lib/filters'
 import { useApp } from '../state/store'
-import { Legend } from '../panels/Legend'
 import { MapTooltip, type HoverTarget } from '../panels/MapTooltip'
-import { SelectionChip } from '../panels/SelectionChip'
 import { MAP_SIZE } from './constants'
 import { EventLayer } from './EventLayer'
 import { HitIndex } from './hitTest'
@@ -55,7 +53,8 @@ export function MapStage({ data, selection }: MapStageProps) {
   const [error, setError] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [hover, setHover] = useState<HoverTarget | null>(null)
-  const [selected, setSelected] = useState<PlayerTrail | null>(null)
+  const selected = useApp((state) => state.selectedPlayer)
+  const setSelected = useApp((state) => state.setSelectedPlayer)
 
   const time = useApp((state) => state.time)
   const timeLimit = selection.match ? time : null
@@ -179,7 +178,8 @@ export function MapStage({ data, selection }: MapStageProps) {
     hitRef.current = new HitIndex(scene.projection, selection.players, selection.events)
 
     // A player filtered out of view must not stay highlighted.
-    setSelected((current) => (current && selection.players.includes(current) ? current : null))
+    const { selectedPlayer, setSelectedPlayer } = useApp.getState()
+    if (selectedPlayer && !selection.players.includes(selectedPlayer)) setSelectedPlayer(null)
     setHover(null)
   }, [selection, ready])
 
@@ -287,10 +287,6 @@ export function MapStage({ data, selection }: MapStageProps) {
       </div>
 
       {hover && <MapTooltip target={hover} />}
-
-      {selected && <SelectionChip player={selected} onClear={() => setSelected(null)} />}
-
-      {ready && <Legend />}
 
       {ready && (
         <div className="absolute right-5 top-5 flex flex-col gap-1.5">

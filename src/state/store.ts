@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { loadIndex, loadMap } from '../lib/data'
 import { ALL } from '../lib/filters'
-import type { DataIndex, EventCategory, MapData } from '../lib/types'
+import type { DataIndex, EventCategory, MapData, PlayerTrail } from '../lib/types'
 
 type Status = 'loading' | 'ready' | 'error'
 
@@ -24,6 +24,12 @@ interface AppState {
   /** Playback rate as a multiple of real time. */
   speed: number
 
+  /**
+   * The journey being inspected, held by identity rather than by index because
+   * filtering rebuilds the arrays around it.
+   */
+  selectedPlayer: PlayerTrail | null
+
   init: () => Promise<void>
   selectMap: (key: string) => Promise<void>
   setDate: (date: string) => void
@@ -33,6 +39,7 @@ interface AppState {
   setTime: (time: number) => void
   setPlaying: (playing: boolean) => void
   setSpeed: (speed: number) => void
+  setSelectedPlayer: (player: PlayerTrail | null) => void
 }
 
 /** Offered playback rates. Real time is slow going for a ten minute match. */
@@ -67,6 +74,7 @@ export const useApp = create<AppState>((set, get) => ({
   time: 0,
   playing: false,
   speed: 2,
+  selectedPlayer: null,
 
   async init() {
     try {
@@ -94,6 +102,7 @@ export const useApp = create<AppState>((set, get) => ({
       matchId: ALL,
       time: 0,
       playing: false,
+      selectedPlayer: null,
     })
 
     try {
@@ -122,7 +131,7 @@ export const useApp = create<AppState>((set, get) => ({
   setMatch(matchId) {
     // A different match has its own clock, so the playhead goes back to zero
     // and playback stops rather than running on into unrelated data.
-    set({ matchId, time: 0, playing: false })
+    set({ matchId, time: 0, playing: false, selectedPlayer: null })
   },
 
   toggleClass(which) {
@@ -151,6 +160,10 @@ export const useApp = create<AppState>((set, get) => ({
 
   setSpeed(speed) {
     set({ speed })
+  },
+
+  setSelectedPlayer(player) {
+    set({ selectedPlayer: player })
   },
 }))
 

@@ -1,10 +1,12 @@
 import { useEffect, useMemo } from 'react'
 import { Crosshair } from 'lucide-react'
 import { MapStage } from './map/MapStage'
+import { DetailRail } from './panels/DetailRail'
 import { FilterRail } from './panels/FilterRail'
 import { Timeline } from './panels/Timeline'
 import { EMPTY_SELECTION, selectData } from './lib/filters'
 import { useApp } from './state/store'
+import { useKeyboard } from './state/useKeyboard'
 import { usePlayback } from './state/usePlayback'
 
 export default function App() {
@@ -30,7 +32,9 @@ export default function App() {
     [mapData, date, matchId, showHumans, showBots, events],
   )
 
-  usePlayback(selection.match ? Math.max(selection.match.duration, 1) : null)
+  const duration = selection.match ? Math.max(selection.match.duration, 1) : null
+  usePlayback(duration)
+  useKeyboard(duration)
 
   return (
     <div className="flex h-full flex-col bg-void">
@@ -68,6 +72,8 @@ export default function App() {
 
           <Timeline selection={selection} />
         </div>
+
+        {mapData && <DetailRail data={mapData} selection={selection} />}
       </div>
     </div>
   )
