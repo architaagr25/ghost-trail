@@ -3,6 +3,7 @@ import { Application, Assets, Container, Sprite, Texture } from 'pixi.js'
 import { Crosshair, Minus, Plus } from 'lucide-react'
 import type { MapData, PlayerTrail } from '../lib/types'
 import type { Selection } from '../lib/filters'
+import { useApp } from '../state/store'
 import { Legend } from '../panels/Legend'
 import { MapTooltip, type HoverTarget } from '../panels/MapTooltip'
 import { SelectionChip } from '../panels/SelectionChip'
@@ -55,6 +56,9 @@ export function MapStage({ data, selection }: MapStageProps) {
   const [ready, setReady] = useState(false)
   const [hover, setHover] = useState<HoverTarget | null>(null)
   const [selected, setSelected] = useState<PlayerTrail | null>(null)
+
+  const time = useApp((state) => state.time)
+  const timeLimit = selection.match ? time : null
 
   useEffect(() => {
     const host = hostRef.current
@@ -126,6 +130,17 @@ export function MapStage({ data, selection }: MapStageProps) {
 
       function onWheel(event: WheelEvent) {
         event.preventDefault()
+
+        // A trackpad pinch arrives as a wheel event with ctrlKey set, and a
+        // two-finger swipe sideways arrives as horizontal delta. Treating every
+        // wheel event as zoom made a sideways swipe do nothing, which read as
+        // the map drifting for no reason.
+        const sideways = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+        if (sideways && !event.ctrlKey) {
+          viewport.panBy(event.deltaX, event.deltaY)
+          return
+        }
+
         const rect = app.canvas.getBoundingClientRect()
         // Normalize across mouse wheels and trackpads, which report very
         // different deltaY magnitudes for the same intent.
@@ -171,6 +186,15 @@ export function MapStage({ data, selection }: MapStageProps) {
   useEffect(() => {
     sceneRef.current?.trails.setSelection(selected)
   }, [selected, ready])
+
+  // Playback only has a meaning within one match. Across several there is no
+  // shared clock, so the layers draw everything instead.
+  useEffect(() => {
+    const scene = sceneRef.current
+    if (!scene) return
+    scene.trails.setTimeLimit(timeLimit)
+    scene.events.setTimeLimit(timeLimit)
+  }, [timeLimit, ready, selection])
 
   const viewport = () => sceneRef.current?.viewport ?? null
 

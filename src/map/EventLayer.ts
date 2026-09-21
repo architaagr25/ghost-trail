@@ -24,6 +24,7 @@ export class EventLayer {
   private readonly graphics = new Graphics()
   private readonly projection: Projection
   private events: GameEvent[] = []
+  private limit: number | null = null
   private zoom = 1
   private queued = false
 
@@ -43,6 +44,13 @@ export class EventLayer {
     this.schedule()
   }
 
+  /** Show only events up to this point in the match, or null for all of them. */
+  setTimeLimit(limit: number | null): void {
+    if (limit === this.limit) return
+    this.limit = limit
+    this.schedule()
+  }
+
   private schedule(): void {
     if (this.queued) return
     this.queued = true
@@ -59,6 +67,7 @@ export class EventLayer {
     const radius = MARKER_RADIUS / this.zoom
     const byCategory = new Map<EventCategory, GameEvent[]>()
     for (const event of this.events) {
+      if (this.limit !== null && event.t > this.limit) continue
       const bucket = byCategory.get(event.c)
       if (bucket) bucket.push(event)
       else byCategory.set(event.c, [event])

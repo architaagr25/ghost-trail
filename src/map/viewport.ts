@@ -88,6 +88,13 @@ export class Viewport {
     this.lastY = y
   }
 
+  /** Shifts the view by a screen-space delta, for trackpad scrolling. */
+  panBy(dx: number, dy: number): void {
+    this.panX -= dx
+    this.panY -= dy
+    this.apply()
+  }
+
   drag(x: number, y: number): void {
     if (!this.dragging) return
     this.panX += x - this.lastX
@@ -144,15 +151,22 @@ export class Viewport {
   }
 
   /**
-   * Keep at least the map edge within the viewport. When the map is smaller
-   * than the viewport on an axis it stays centred on that axis instead.
+   * Keeps the map within reach without pinning it.
+   *
+   * Where the map is larger than the viewport the limit is the overhang, so no
+   * empty gap can be dragged into view. Where it is smaller the limit is the
+   * leftover room, so it can still be moved around inside the frame.
+   *
+   * The symmetric form matters: clamping the smaller axis to zero would force
+   * the map back to centre on that axis, and cursor-anchored zoom would then
+   * snap sideways every time it tried to hold a point that is off centre.
    */
   private clampPan(): void {
     const drawn = MAP_SIZE * this.scale
-    const slackX = Math.max(0, drawn - this.size.width)
-    const slackY = Math.max(0, drawn - this.size.height)
-    this.panX = clamp(this.panX, -slackX / 2, slackX / 2)
-    this.panY = clamp(this.panY, -slackY / 2, slackY / 2)
+    const limitX = Math.abs(drawn - this.size.width) / 2
+    const limitY = Math.abs(drawn - this.size.height) / 2
+    this.panX = clamp(this.panX, -limitX, limitX)
+    this.panY = clamp(this.panY, -limitY, limitY)
   }
 }
 

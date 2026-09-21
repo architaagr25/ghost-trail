@@ -26,6 +26,9 @@ const UNSELECTED_FADE = 0.22
 const SELECTED_WIDTH = 2.4
 const SELECTED_ALPHA = 1
 
+/** Radius of the dot marking where a player is at the current playhead. */
+const HEAD_RADIUS = 3
+
 /**
  * Draws player movement paths, with bots visually separated from humans.
  *
@@ -46,16 +49,23 @@ export class TrailLayer {
   private readonly botGraphics = new Graphics()
   private readonly humanGraphics = new Graphics()
   private readonly selectedGraphics = new Graphics()
+  private readonly headGraphics = new Graphics()
   private readonly projection: Projection
   private trails: PlayerTrail[] = []
   private selected: PlayerTrail | null = null
+  private limit: number | null = null
   private zoom = 1
   private queued = false
 
   constructor(projection: Projection) {
     this.projection = projection
     // Order matters: bots, then humans, then whoever is selected on top.
-    this.view.addChild(this.botGraphics, this.humanGraphics, this.selectedGraphics)
+    this.view.addChild(
+      this.botGraphics,
+      this.humanGraphics,
+      this.selectedGraphics,
+      this.headGraphics,
+    )
   }
 
   /**
@@ -82,6 +92,17 @@ export class TrailLayer {
   }
 
   /**
+   * Reveal trails only up to this many seconds into the match, or null to draw
+   * them whole. Playback has no meaning across several matches at once, so the
+   * caller passes null there.
+   */
+  setTimeLimit(limit: number | null): void {
+    if (limit === this.limit) return
+    this.limit = limit
+    this.schedule()
+  }
+
+  /**
    * Coalesce redraws into the next frame. A wheel gesture fires many zoom
    * events in quick succession and each one would otherwise redraw every path.
    */
@@ -98,6 +119,7 @@ export class TrailLayer {
     this.humanGraphics.clear()
     this.botGraphics.clear()
     this.selectedGraphics.clear()
+    this.headGraphics.clear()
 
     // Everything else recedes while one player is picked out, so the selected
     // route stays readable through the crowd it is drawn over.
@@ -111,6 +133,49 @@ export class TrailLayer {
     }
 
     if (this.selected && this.selected.x.length > 1) this.drawSelected(this.selected)
+    if (this.limit !== null) this.drawHeads()
+  }
+
+  /**
+   * Number of points revealed at the current playhead.
+   *
+   * Trail samples are in ascending time order, so this is a scan for the first
+   * point past the limit. The arrays are short -- about 60 points for a typical
+   * journey -- so a linear scan beats the bookkeeping a binary search needs.
+   */
+  private revealed(trail: PlayerTrail): number {
+    if (this.limit === null) return trail.x.length
+    let count = 0
+    while (count < trail.t.length && trail.t[count] <= this.limit) count += 1
+    return count
+  }
+
+  /**
+   * A dot at each player's latest known position.
+   *
+   * A path that grows from its far end is hard to follow; the dot says where
+   * everyone is right now, which is what playback is being watched for.
+   */
+  private drawHeads(): void {
+    const g = this.headGraphics
+    const radius = HEAD_RADIUS / this.zoom
+
+    for (const colour of [COLORS.bot, COLORS.human]) {
+      let drew = false
+      for (const trail of this.trails) {
+        if ((trail.b ? COLORS.bot : COLORS.human) !== colour) continue
+        const count = this.revealed(trail)
+        if (count === 0) continue
+
+        const last = count - 1
+        g.circle(this.projection.x(trail.x[last]), this.projection.y(trail.z[last]), radius)
+        drew = true
+      }
+      if (drew) {
+        g.fill({ color: colour, alpha: 0.95 })
+        g.stroke({ width: 1 / this.zoom, color: 0x05090c, alpha: 0.8 })
+      }
+    }
   }
 
   private drawSelected(trail: PlayerTrail): void {
@@ -129,9 +194,11 @@ export class TrailLayer {
   private tracePath(g: Graphics, trail: PlayerTrail): void {
     const { x, z } = trail
     const breaks = new Set(trail.breaks)
+    const count = this.revealed(trail)
+    if (count < 2) return
 
     g.moveTo(this.projection.x(x[0]), this.projection.y(z[0]))
-    for (let i = 1; i < x.length; i += 1) {
+    for (let i = 1; i < count; i += 1) {
       const px = this.projection.x(x[i])
       const py = this.projection.y(z[i])
       // Do not invent a path through terrain the player may never have crossed.
@@ -159,6 +226,7 @@ export class TrailLayer {
     // zoom factor along with the stroke width -- up to the cap.
     const dashZoom = Math.min(this.zoom, MAX_DASH_ZOOM)
     for (const run of this.segments(trail)) {
+      if (run.length < 2) continue
       walkDashes(run, BOT_DASH / dashZoom, BOT_GAP / dashZoom, (x1, y1, x2, y2) => {
         g.moveTo(x1, y1)
         g.lineTo(x2, y2)
@@ -175,7 +243,8 @@ export class TrailLayer {
 
   /** Splits a trail into the runs between recording gaps, in map space. */
   private segments(trail: PlayerTrail): Array<Array<[number, number]>> {
-    const bounds = [0, ...trail.breaks, trail.x.length]
+    const count = this.revealed(trail)
+    const bounds = [0, ...trail.breaks.filter((index) => index < count), count]
     const runs: Array<Array<[number, number]>> = []
 
     for (let b = 1; b < bounds.length; b += 1) {

@@ -2,10 +2,10 @@ import { useEffect, useMemo } from 'react'
 import { Crosshair } from 'lucide-react'
 import { MapStage } from './map/MapStage'
 import { FilterRail } from './panels/FilterRail'
-import { selectData, type Selection } from './lib/filters'
+import { Timeline } from './panels/Timeline'
+import { EMPTY_SELECTION, selectData } from './lib/filters'
 import { useApp } from './state/store'
-
-const EMPTY: Selection = { matches: [], players: [], events: [], match: null }
+import { usePlayback } from './state/usePlayback'
 
 export default function App() {
   const init = useApp((state) => state.init)
@@ -14,15 +14,23 @@ export default function App() {
   const mapData = useApp((state) => state.mapData)
   const date = useApp((state) => state.date)
   const matchId = useApp((state) => state.matchId)
+  const showHumans = useApp((state) => state.showHumans)
+  const showBots = useApp((state) => state.showBots)
+  const events = useApp((state) => state.events)
 
   useEffect(() => {
     void init()
   }, [init])
 
   const selection = useMemo(
-    () => (mapData ? selectData(mapData, date, matchId) : EMPTY),
-    [mapData, date, matchId],
+    () =>
+      mapData
+        ? selectData(mapData, { date, matchId, showHumans, showBots, events })
+        : EMPTY_SELECTION,
+    [mapData, date, matchId, showHumans, showBots, events],
   )
+
+  usePlayback(selection.match ? Math.max(selection.match.duration, 1) : null)
 
   return (
     <div className="flex h-full flex-col bg-void">
@@ -41,21 +49,25 @@ export default function App() {
       <div className="flex min-h-0 flex-1">
         <FilterRail selection={selection} />
 
-        <main className="relative min-w-0 flex-1">
-          {error && (
-            <p className="grid h-full place-items-center px-8 text-center text-sm text-alert">
-              {error}
-            </p>
-          )}
-          {!error && status === 'loading' && (
-            <p className="grid h-full place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">
-              Loading telemetry
-            </p>
-          )}
-          {!error && mapData && status === 'ready' && (
-            <MapStage data={mapData} selection={selection} />
-          )}
-        </main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="relative min-h-0 flex-1">
+            {error && (
+              <p className="grid h-full place-items-center px-8 text-center text-sm text-alert">
+                {error}
+              </p>
+            )}
+            {!error && status === 'loading' && (
+              <p className="grid h-full place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">
+                Loading telemetry
+              </p>
+            )}
+            {!error && mapData && status === 'ready' && (
+              <MapStage data={mapData} selection={selection} />
+            )}
+          </main>
+
+          <Timeline selection={selection} />
+        </div>
       </div>
     </div>
   )
