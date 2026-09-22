@@ -34,6 +34,18 @@ const RAMP: Array<[number, number, number, number]> = [
 ]
 const RAMP_ALPHA = [0, 0.38, 0.68, 0.92]
 
+/**
+ * The ramp as a CSS gradient, so the legend swatch is painted from the very
+ * same stops the canvas uses and the two cannot drift apart.
+ */
+export function rampCss(): string {
+  const stops = RAMP.map(([stop, r, g, b], index) => {
+    const alpha = RAMP_ALPHA[index]
+    return `rgba(${r}, ${g}, ${b}, ${alpha}) ${(stop * 100).toFixed(0)}%`
+  })
+  return `linear-gradient(to right, ${stops.join(', ')})`
+}
+
 export interface DensityPoint {
   /** World coordinates; projection to grid space happens here. */
   x: number

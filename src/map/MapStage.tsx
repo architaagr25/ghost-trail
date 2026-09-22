@@ -63,6 +63,10 @@ export function MapStage({ data, selection }: MapStageProps) {
   const timeLimit = selection.match ? time : null
   const heatmap = useApp((state) => state.heatmap)
   const setHeatmap = useApp((state) => state.setHeatmap)
+  const heatIntensity = useApp((state) => state.heatIntensity)
+  const setHeatIntensity = useApp((state) => state.setHeatIntensity)
+  const showTrails = useApp((state) => state.showTrails)
+  const setShowTrails = useApp((state) => state.setShowTrails)
 
   useEffect(() => {
     const host = hostRef.current
@@ -205,8 +209,13 @@ export function MapStage({ data, selection }: MapStageProps) {
     const scene = sceneRef.current
     if (!scene) return
     scene.heatmap.setVisible(heatmap !== 'off')
+    scene.heatmap.setIntensity(heatIntensity)
     if (heatmap !== 'off') scene.heatmap.setPoints(heatPoints)
-  }, [heatmap, heatPoints, ready])
+  }, [heatmap, heatPoints, heatIntensity, ready])
+
+  useEffect(() => {
+    sceneRef.current?.trails.setVisible(showTrails)
+  }, [showTrails, ready])
 
   // Playback only has a meaning within one match. Across several there is no
   // shared clock, so the layers draw everything instead.
@@ -311,7 +320,15 @@ export function MapStage({ data, selection }: MapStageProps) {
 
       {ready && (
         <div className="absolute left-1/2 top-5 -translate-x-1/2">
-          <HeatmapControl mode={heatmap} count={heatPoints.length} onChange={setHeatmap} />
+          <HeatmapControl
+            mode={heatmap}
+            count={heatPoints.length}
+            intensity={heatIntensity}
+            showTrails={showTrails}
+            onChange={setHeatmap}
+            onIntensity={setHeatIntensity}
+            onToggleTrails={setShowTrails}
+          />
         </div>
       )}
 

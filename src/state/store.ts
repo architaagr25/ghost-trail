@@ -32,6 +32,10 @@ interface AppState {
 
   /** Which density field is overlaid on the map, if any. */
   heatmap: HeatmapMode
+  /** Multiplier on the density ramp, for pulling out quieter areas. */
+  heatIntensity: number
+  /** Trails can be hidden to read a density field on its own. */
+  showTrails: boolean
 
   init: () => Promise<void>
   selectMap: (key: string) => Promise<void>
@@ -44,6 +48,8 @@ interface AppState {
   setSpeed: (speed: number) => void
   setSelectedPlayer: (player: PlayerTrail | null) => void
   setHeatmap: (mode: HeatmapMode) => void
+  setHeatIntensity: (intensity: number) => void
+  setShowTrails: (show: boolean) => void
 }
 
 export type HeatmapMode = 'off' | 'kills' | 'deaths' | 'traffic'
@@ -82,6 +88,8 @@ export const useApp = create<AppState>((set, get) => ({
   speed: 2,
   selectedPlayer: null,
   heatmap: 'off',
+  heatIntensity: 1,
+  showTrails: true,
 
   async init() {
     try {
@@ -111,6 +119,8 @@ export const useApp = create<AppState>((set, get) => ({
       playing: false,
       selectedPlayer: null,
   heatmap: 'off',
+  heatIntensity: 1,
+  showTrails: true,
     })
 
     try {
@@ -175,7 +185,16 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   setHeatmap(mode) {
-    set({ heatmap: mode })
+    // Turning the overlay off has no reason to leave the trails hidden.
+    set({ heatmap: mode, showTrails: mode === 'off' ? true : get().showTrails })
+  },
+
+  setHeatIntensity(intensity) {
+    set({ heatIntensity: intensity })
+  },
+
+  setShowTrails(show) {
+    set({ showTrails: show })
   },
 }))
 

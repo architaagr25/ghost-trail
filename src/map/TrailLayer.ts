@@ -80,6 +80,10 @@ export class TrailLayer {
     this.schedule()
   }
 
+  setVisible(visible: boolean): void {
+    this.view.visible = visible
+  }
+
   setTrails(trails: PlayerTrail[]): void {
     this.trails = trails
     this.schedule()
