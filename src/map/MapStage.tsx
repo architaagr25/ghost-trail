@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Application, Assets, Container, Sprite, Texture } from 'pixi.js'
 import { Crosshair, Minus, Plus } from 'lucide-react'
-import type { MapData } from '../lib/types'
+import type { GameEvent, MapData } from '../lib/types'
 import type { Selection } from '../lib/filters'
-import { useApp } from '../state/store'
+import { useApp, type HeatmapMode } from '../state/store'
+import { HeatmapControl } from '../panels/HeatmapControl'
 import { MapTooltip, type HoverTarget } from '../panels/MapTooltip'
 import { MAP_SIZE } from './constants'
 import { EventLayer } from './EventLayer'
+import { HeatmapLayer } from './HeatmapLayer'
 import { HitIndex } from './hitTest'
 import { Projection } from './projection'
 import { TrailLayer } from './TrailLayer'
@@ -26,6 +28,7 @@ interface MapStageProps {
 
 interface Scene {
   app: Application
+  heatmap: HeatmapLayer
   trails: TrailLayer
   events: EventLayer
   projection: Projection
@@ -58,6 +61,8 @@ export function MapStage({ data, selection }: MapStageProps) {
 
   const time = useApp((state) => state.time)
   const timeLimit = selection.match ? time : null
+  const heatmap = useApp((state) => state.heatmap)
+  const setHeatmap = useApp((state) => state.setHeatmap)
 
   useEffect(() => {
     const host = hostRef.current
@@ -103,9 +108,11 @@ export function MapStage({ data, selection }: MapStageProps) {
       world.addChild(minimap)
 
       const projection = new Projection(data.config)
+      const heatmap = new HeatmapLayer(projection)
       const trails = new TrailLayer(projection)
       const events = new EventLayer(projection)
-      world.addChild(trails.view, events.view)
+      // Heat sits under the trails so it shades the ground they run over.
+      world.addChild(heatmap.view, trails.view, events.view)
 
       const viewport = new Viewport(
         world,
@@ -118,7 +125,7 @@ export function MapStage({ data, selection }: MapStageProps) {
       )
       viewport.reset()
 
-      scene = { app, trails, events, projection, viewport }
+      scene = { app, heatmap, trails, events, projection, viewport }
       sceneRef.current = scene
       setReady(true)
 
@@ -186,6 +193,20 @@ export function MapStage({ data, selection }: MapStageProps) {
   useEffect(() => {
     sceneRef.current?.trails.setSelection(selected)
   }, [selected, ready])
+
+  // The density field follows the same filters as everything else, so the heat
+  // always describes exactly what is on screen.
+  const heatPoints = useMemo(
+    () => densityPoints(heatmap, selection),
+    [heatmap, selection],
+  )
+
+  useEffect(() => {
+    const scene = sceneRef.current
+    if (!scene) return
+    scene.heatmap.setVisible(heatmap !== 'off')
+    if (heatmap !== 'off') scene.heatmap.setPoints(heatPoints)
+  }, [heatmap, heatPoints, ready])
 
   // Playback only has a meaning within one match. Across several there is no
   // shared clock, so the layers draw everything instead.
@@ -289,6 +310,12 @@ export function MapStage({ data, selection }: MapStageProps) {
       {hover && <MapTooltip target={hover} />}
 
       {ready && (
+        <div className="absolute left-1/2 top-5 -translate-x-1/2">
+          <HeatmapControl mode={heatmap} count={heatPoints.length} onChange={setHeatmap} />
+        </div>
+      )}
+
+      {ready && (
         <div className="absolute right-5 top-5 flex flex-col gap-1.5">
           <StageButton label="Zoom in" onClick={() => viewport()?.zoomIn()}>
             <Plus size={15} />
@@ -315,6 +342,35 @@ export function MapStage({ data, selection }: MapStageProps) {
       )}
     </div>
   )
+}
+
+/**
+ * The points behind each density field.
+ *
+ * Kill zones plot where kills were taken from and death zones where players
+ * went down -- two different questions about the same fight, and a designer
+ * reading cover and sightlines needs them apart. Storm deaths count towards
+ * deaths: the question is where players die, and the storm is one of the ways.
+ */
+function densityPoints(mode: HeatmapMode, selection: Selection): Array<{ x: number; z: number }> {
+  if (mode === 'off') return []
+
+  if (mode === 'traffic') {
+    const points: Array<{ x: number; z: number }> = []
+    for (const player of selection.players) {
+      for (let i = 0; i < player.x.length; i += 1) {
+        points.push({ x: player.x[i], z: player.z[i] })
+      }
+    }
+    return points
+  }
+
+  const wanted =
+    mode === 'kills'
+      ? (category: GameEvent['c']) => category === 'kill'
+      : (category: GameEvent['c']) => category === 'death' || category === 'storm'
+
+  return selection.scopedEvents.filter((event) => wanted(event.c))
 }
 
 function StageButton({

@@ -30,6 +30,9 @@ interface AppState {
    */
   selectedPlayer: PlayerTrail | null
 
+  /** Which density field is overlaid on the map, if any. */
+  heatmap: HeatmapMode
+
   init: () => Promise<void>
   selectMap: (key: string) => Promise<void>
   setDate: (date: string) => void
@@ -40,7 +43,10 @@ interface AppState {
   setPlaying: (playing: boolean) => void
   setSpeed: (speed: number) => void
   setSelectedPlayer: (player: PlayerTrail | null) => void
+  setHeatmap: (mode: HeatmapMode) => void
 }
+
+export type HeatmapMode = 'off' | 'kills' | 'deaths' | 'traffic'
 
 /** Offered playback rates. Real time is slow going for a ten minute match. */
 export const SPEEDS = [0.5, 1, 2, 4, 8] as const
@@ -75,6 +81,7 @@ export const useApp = create<AppState>((set, get) => ({
   playing: false,
   speed: 2,
   selectedPlayer: null,
+  heatmap: 'off',
 
   async init() {
     try {
@@ -103,6 +110,7 @@ export const useApp = create<AppState>((set, get) => ({
       time: 0,
       playing: false,
       selectedPlayer: null,
+  heatmap: 'off',
     })
 
     try {
@@ -164,6 +172,10 @@ export const useApp = create<AppState>((set, get) => ({
 
   setSelectedPlayer(player) {
     set({ selectedPlayer: player })
+  },
+
+  setHeatmap(mode) {
+    set({ heatmap: mode })
   },
 }))
 

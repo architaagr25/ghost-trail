@@ -25,6 +25,12 @@ export interface Selection {
   /** Events to draw, after every filter. */
   events: GameEvent[]
   /**
+   * Events after the date, match and class filters but before the event-type
+   * checkboxes. The heatmap reads these: its mode already names which type it
+   * is plotting, so hiding kill markers should not empty the kill zone field.
+   */
+  scopedEvents: GameEvent[]
+  /**
    * Totals within the selected matches, before the class and event-type
    * filters. These feed the toggle labels, which have to keep showing what is
    * available to turn back on rather than what is currently showing.
@@ -41,6 +47,7 @@ export const EMPTY_SELECTION: Selection = {
   match: null,
   players: [],
   events: [],
+  scopedEvents: [],
   totals: { humans: 0, bots: 0, events: { kill: 0, death: 0, loot: 0, storm: 0 } },
 }
 
@@ -81,6 +88,10 @@ export function selectData(data: MapData, filters: Filters): Selection {
   const bothClasses = filters.showHumans && filters.showBots
   const allEvents = EVENT_CATEGORIES.every((category) => filters.events[category])
 
+  const byClass = bothClasses
+    ? scopedEvents
+    : scopedEvents.filter((event) => (event.b ? filters.showBots : filters.showHumans))
+
   return {
     matches: [...matches].sort((a, b) => b.start - a.start),
     match: matches.length === 1 ? matches[0] : null,
@@ -90,13 +101,8 @@ export function selectData(data: MapData, filters: Filters): Selection {
     // An event belongs to the actor that produced it, so hiding bots hides
     // their kills too. Leaving them behind would show combat with no visible
     // participant.
-    events:
-      bothClasses && allEvents
-        ? scopedEvents
-        : scopedEvents.filter(
-            (event) =>
-              filters.events[event.c] && (event.b ? filters.showBots : filters.showHumans),
-          ),
+    events: allEvents ? byClass : byClass.filter((event) => filters.events[event.c]),
+    scopedEvents: byClass,
     totals,
   }
 }
