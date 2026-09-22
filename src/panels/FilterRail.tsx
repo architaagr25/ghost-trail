@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Bot, User } from 'lucide-react'
+import { Bot, ChevronLeft, User } from 'lucide-react'
 import { useApp } from '../state/store'
 import { ALL, EVENT_CATEGORIES, matchesForDate, type Selection } from '../lib/filters'
 import { formatDate } from '../lib/format'
@@ -15,7 +15,13 @@ import { MatchPicker } from './MatchPicker'
  * which match, then what to show within it. Every control carries the count
  * behind it, so the scope of what is on screen is never a guess.
  */
-export function FilterRail({ selection }: { selection: Selection }) {
+export function FilterRail({
+  selection,
+  onCollapse,
+}: {
+  selection: Selection
+  onCollapse: () => void
+}) {
   const index = useApp((state) => state.index)
   const mapKey = useApp((state) => state.mapKey)
   const mapData = useApp((state) => state.mapData)
@@ -59,8 +65,16 @@ export function FilterRail({ selection }: { selection: Selection }) {
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-edge bg-panel">
-      <div className="border-b border-edge px-5 py-4">
+      <div className="flex items-center justify-between border-b border-edge py-4 pl-5 pr-3">
         <p className="text-[10px] uppercase tracking-[0.25em] text-signal-dim">Query control</p>
+        <button
+          type="button"
+          aria-label="Hide query control"
+          onClick={onCollapse}
+          className="grid h-6 w-6 place-items-center rounded text-ink-faint transition hover:bg-panel-raised hover:text-ink"
+        >
+          <ChevronLeft size={14} />
+        </button>
       </div>
 
       <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">

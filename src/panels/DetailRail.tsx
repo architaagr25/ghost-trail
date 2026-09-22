@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Bot, User, X } from 'lucide-react'
+import { Bot, ChevronRight, User, X } from 'lucide-react'
 import type { MapData } from '../lib/types'
 import type { Selection } from '../lib/filters'
 import { playerStats, survivalCurve } from '../lib/stats'
@@ -16,7 +16,15 @@ import { SurvivalChart } from './SurvivalChart'
  * the match it belongs to, then the key. The panel is always present so the
  * layout does not jump when a selection is made or cleared.
  */
-export function DetailRail({ data, selection }: { data: MapData; selection: Selection }) {
+export function DetailRail({
+  data,
+  selection,
+  onCollapse,
+}: {
+  data: MapData
+  selection: Selection
+  onCollapse: () => void
+}) {
   const selected = useApp((state) => state.selectedPlayer)
   const setSelected = useApp((state) => state.setSelectedPlayer)
   const time = useApp((state) => state.time)
@@ -37,7 +45,17 @@ export function DetailRail({ data, selection }: { data: MapData; selection: Sele
   return (
     <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-edge bg-panel">
       <section className="border-b border-edge px-5 py-4">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-signal-dim">Trail acquired</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-signal-dim">Trail acquired</p>
+          <button
+            type="button"
+            aria-label="Hide details"
+            onClick={onCollapse}
+            className="-mr-2 grid h-6 w-6 place-items-center rounded text-ink-faint transition hover:bg-panel-raised hover:text-ink"
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
 
         {!selected || !stats ? (
           <p className="mt-3 text-[11px] leading-relaxed text-ink-faint">

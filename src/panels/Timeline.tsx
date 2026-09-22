@@ -60,7 +60,7 @@ export function Timeline({ selection }: { selection: Selection }) {
   }
 
   return (
-    <footer className="flex h-16 items-center gap-4 border-t border-edge bg-panel px-6">
+    <footer className="flex h-16 items-center gap-3 border-t border-edge bg-panel px-4 sm:gap-4 sm:px-6">
       <button
         type="button"
         aria-label={playing ? 'Pause' : 'Play'}
@@ -70,7 +70,7 @@ export function Timeline({ selection }: { selection: Selection }) {
         {playing ? <Pause size={15} /> : atEnd ? <RotateCcw size={15} /> : <Play size={15} />}
       </button>
 
-      <p className="w-24 shrink-0 tabular-nums text-sm text-ink">
+      <p className="w-20 shrink-0 tabular-nums text-xs text-ink sm:w-24 sm:text-sm">
         {formatClock(time)}
         <span className="text-ink-faint"> / {formatClock(duration)}</span>
       </p>
@@ -117,7 +117,12 @@ export function Timeline({ selection }: { selection: Selection }) {
             type="button"
             onClick={() => setSpeed(option)}
             aria-pressed={option === speed}
+            // The extremes fold away first on a narrow window. They are the
+            // least used, and a wrapped transport bar is worse than a shorter
+            // set of speeds.
             className={`rounded px-2 py-1 text-[11px] tabular-nums transition ${
+              option === 0.5 || option === 8 ? 'hidden lg:block' : ''
+            } ${
               option === speed
                 ? 'bg-panel-raised text-signal'
                 : 'text-ink-faint hover:text-ink-dim'
