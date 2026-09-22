@@ -62,6 +62,7 @@ export default function App() {
                 icon={<TriangleAlert size={17} />}
                 title="Telemetry unavailable"
                 hint={error}
+                action={{ label: 'Retry', onClick: () => void init() }}
               />
             )}
             {!error && status === 'loading' && <Loading label="Loading telemetry" />}

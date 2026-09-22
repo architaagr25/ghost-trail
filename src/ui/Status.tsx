@@ -11,11 +11,14 @@ export function StatusPanel({
   title,
   hint,
   tone = 'quiet',
+  action,
 }: {
   icon?: React.ReactNode
   title: string
   hint?: string
   tone?: 'quiet' | 'alert'
+  /** A way out of the state, for the ones the reader can recover from. */
+  action?: { label: string; onClick: () => void }
 }) {
   return (
     <div className="grid h-full place-items-center px-8">
@@ -37,6 +40,16 @@ export function StatusPanel({
           {title}
         </p>
         {hint && <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">{hint}</p>}
+
+        {action && (
+          <button
+            type="button"
+            onClick={action.onClick}
+            className="mt-5 rounded border border-edge px-3.5 py-2 text-[11px] uppercase tracking-[0.15em] text-ink-dim transition hover:border-edge-bright hover:text-ink"
+          >
+            {action.label}
+          </button>
+        )}
       </div>
     </div>
   )
