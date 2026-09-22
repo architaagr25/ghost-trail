@@ -50,6 +50,17 @@ canvas {
   touch-action: none;
 }
 
+/* The loading sweep. Runs edge to edge rather than looping from the start, so
+   a slow load does not read as a stutter. */
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

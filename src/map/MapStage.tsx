@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Application, Assets, Container, Sprite, Texture } from 'pixi.js'
-import { Crosshair, Minus, Plus } from 'lucide-react'
+import { Crosshair, Minus, Plus, SearchX, TriangleAlert } from 'lucide-react'
 import type { GameEvent, MapData } from '../lib/types'
 import type { Selection } from '../lib/filters'
 import { useApp, type HeatmapMode } from '../state/store'
 import { HeatmapControl } from '../panels/HeatmapControl'
+import { Loading, StatusPanel } from '../ui/Status'
 import { MapTooltip, type HoverTarget } from '../panels/MapTooltip'
 import { MAP_SIZE } from './constants'
 import { EventLayer } from './EventLayer'
@@ -346,16 +347,37 @@ export function MapStage({ data, selection }: MapStageProps) {
         </div>
       )}
 
+      {/* Nothing to draw is a filter result, not a failure, so the map stays
+          visible underneath and the message names the way out. */}
+      {ready && !error && selection.players.length === 0 && (
+        <div className="absolute inset-0 bg-void/70">
+          <StatusPanel
+            icon={<SearchX size={17} />}
+            title="No journeys in view"
+            hint={
+              selection.matches.length
+                ? 'Every player in this selection is hidden. Turn a player class back on.'
+                : 'No matches on this map for the chosen date.'
+            }
+          />
+        </div>
+      )}
+
       {!ready && !error && (
-        <p className="absolute inset-0 grid place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">
-          Loading map
-        </p>
+        <div className="absolute inset-0">
+          <Loading label="Loading map" />
+        </div>
       )}
 
       {error && (
-        <p className="absolute inset-0 grid place-items-center px-8 text-center text-sm text-alert">
-          {error}
-        </p>
+        <div className="absolute inset-0 bg-void">
+          <StatusPanel
+            tone="alert"
+            icon={<TriangleAlert size={17} />}
+            title="Could not draw this map"
+            hint={error}
+          />
+        </div>
       )}
     </div>
   )

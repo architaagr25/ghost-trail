@@ -1,11 +1,12 @@
 import { useEffect, useMemo } from 'react'
-import { Crosshair } from 'lucide-react'
+import { Crosshair, TriangleAlert } from 'lucide-react'
 import { MapStage } from './map/MapStage'
 import { DetailRail } from './panels/DetailRail'
 import { FilterRail } from './panels/FilterRail'
 import { Timeline } from './panels/Timeline'
 import { EMPTY_SELECTION, selectData } from './lib/filters'
 import { useApp } from './state/store'
+import { Loading, StatusPanel } from './ui/Status'
 import { useKeyboard } from './state/useKeyboard'
 import { usePlayback } from './state/usePlayback'
 
@@ -56,15 +57,14 @@ export default function App() {
         <div className="flex min-w-0 flex-1 flex-col">
           <main className="relative min-h-0 flex-1">
             {error && (
-              <p className="grid h-full place-items-center px-8 text-center text-sm text-alert">
-                {error}
-              </p>
+              <StatusPanel
+                tone="alert"
+                icon={<TriangleAlert size={17} />}
+                title="Telemetry unavailable"
+                hint={error}
+              />
             )}
-            {!error && status === 'loading' && (
-              <p className="grid h-full place-items-center text-xs uppercase tracking-[0.3em] text-ink-faint">
-                Loading telemetry
-              </p>
-            )}
+            {!error && status === 'loading' && <Loading label="Loading telemetry" />}
             {!error && mapData && status === 'ready' && (
               <MapStage data={mapData} selection={selection} />
             )}
