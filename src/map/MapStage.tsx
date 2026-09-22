@@ -201,8 +201,8 @@ export function MapStage({ data, selection }: MapStageProps) {
   // The density field follows the same filters as everything else, so the heat
   // always describes exactly what is on screen.
   const heatPoints = useMemo(
-    () => densityPoints(heatmap, selection),
-    [heatmap, selection],
+    () => densityPoints(heatmap, selection, timeLimit),
+    [heatmap, selection, timeLimit],
   )
 
   useEffect(() => {
@@ -368,14 +368,24 @@ export function MapStage({ data, selection }: MapStageProps) {
  * went down -- two different questions about the same fight, and a designer
  * reading cover and sightlines needs them apart. Storm deaths count towards
  * deaths: the question is where players die, and the storm is one of the ways.
+ *
+ * During playback the field is built only from what has happened so far, the
+ * same cut the trails and markers use. A field that showed the whole match
+ * while the trails were still drawing would be answering a different question
+ * from everything around it.
  */
-function densityPoints(mode: HeatmapMode, selection: Selection): Array<{ x: number; z: number }> {
+function densityPoints(
+  mode: HeatmapMode,
+  selection: Selection,
+  limit: number | null,
+): Array<{ x: number; z: number }> {
   if (mode === 'off') return []
 
   if (mode === 'traffic') {
     const points: Array<{ x: number; z: number }> = []
     for (const player of selection.players) {
       for (let i = 0; i < player.x.length; i += 1) {
+        if (limit !== null && player.t[i] > limit) break
         points.push({ x: player.x[i], z: player.z[i] })
       }
     }
@@ -387,7 +397,9 @@ function densityPoints(mode: HeatmapMode, selection: Selection): Array<{ x: numb
       ? (category: GameEvent['c']) => category === 'kill'
       : (category: GameEvent['c']) => category === 'death' || category === 'storm'
 
-  return selection.scopedEvents.filter((event) => wanted(event.c))
+  return selection.scopedEvents.filter(
+    (event) => wanted(event.c) && (limit === null || event.t <= limit),
+  )
 }
 
 function StageButton({
