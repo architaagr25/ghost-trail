@@ -46,7 +46,7 @@ export function DetailRail({
     <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-edge bg-panel">
       <section className="border-b border-edge px-5 py-4">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-signal-dim">Trail acquired</p>
+          <p className="label text-accent">Trail acquired</p>
           <button
             type="button"
             aria-label="Hide details"
@@ -75,7 +75,7 @@ export function DetailRail({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-ink">{shortId(selected.u)}</p>
-                <p className="text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+                <p className="label text-ink-faint">
                   {selected.b ? 'Bot' : 'Human operative'}
                 </p>
               </div>
@@ -102,7 +102,7 @@ export function DetailRail({
       </section>
 
       <section className="border-b border-edge px-5 py-4">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-signal-dim">Match summary</p>
+        <p className="label text-accent">Match summary</p>
 
         {!match ? (
           <p className="mt-3 text-[11px] leading-relaxed text-ink-faint">
@@ -137,8 +137,8 @@ export function DetailRail({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-[0.15em] text-ink-faint">{label}</dt>
-      <dd className="mt-0.5 text-sm tabular-nums text-ink">{value}</dd>
+      <dt className="label text-ink-faint">{label}</dt>
+      <dd className="mt-0.5 text-sm numeric text-ink">{value}</dd>
     </div>
   )
 }

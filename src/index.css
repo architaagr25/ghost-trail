@@ -2,7 +2,7 @@
 
 /*
  * Ghost Trail runs dark-only. It is a HUD sitting on top of dark minimap art,
- * and a light theme would wash out the trail and heatmap colors.
+ * and a light theme would wash out the trail and heatmap colours.
  */
 @theme {
   --color-void: #05090c;
@@ -11,18 +11,58 @@
   --color-edge: #16262f;
   --color-edge-bright: #1f3a46;
 
-  --color-ink: #dceaf0;
-  --color-ink-dim: #7d97a3;
-  --color-ink-faint: #47606b;
+  /*
+   * Text steps, all checked against --color-panel. ink-faint carries the small
+   * uppercase labels, so it has to clear 4.5:1 rather than sitting at the
+   * decorative grey it started as.
+   */
+  --color-ink: #dceaf0; /* 15.5:1 */
+  --color-ink-dim: #7d97a3; /* 6.2:1 */
+  --color-ink-faint: #6b8593; /* 4.9:1 */
 
+  /*
+   * Two cyans with different jobs. signal-dim is a border and only ever borders
+   * -- at 3.6:1 it is not safe for the 10px headings it used to carry, so those
+   * use accent instead.
+   */
   --color-signal: #2ce8d5;
   --color-signal-dim: #17786f;
+  --color-accent: #2bbcae; /* 8.1:1 */
 
   /* Trail and event colours are not here. They live in src/map/style.ts, which
      both the canvas layers and the DOM legend read, so the two cannot drift. */
   --color-alert: #ff2f45;
 
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+/*
+ * Small caps labels. The same three declarations appeared on every panel
+ * heading and stat label; naming them keeps the rhythm identical everywhere.
+ */
+@utility label {
+  font-size: 10px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+}
+
+/* The same label one step up, for panel titles that head a whole screen. */
+@utility label-lg {
+  font-size: 12px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+}
+
+/*
+ * Anything that is a number, an id or a clock reading. Mono keeps digits from
+ * shifting the layout as they tick, and sets identifiers apart from prose.
+ */
+@utility numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 :root {
@@ -39,7 +79,7 @@ body {
   margin: 0;
   background: var(--color-void);
   color: var(--color-ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }
@@ -50,6 +90,12 @@ canvas {
   touch-action: none;
 }
 
+/* One focus treatment everywhere, visible against every surface in the app. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* The loading sweep. Runs edge to edge rather than looping from the start, so
    a slow load does not read as a stutter. */
 @keyframes sweep {
@@ -58,6 +104,16 @@ canvas {
   }
   100% {
     transform: translateX(300%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

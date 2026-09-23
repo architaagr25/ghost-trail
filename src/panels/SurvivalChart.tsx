@@ -62,8 +62,8 @@ export function SurvivalChart({
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-faint">Players remaining</p>
-        <p className="tabular-nums text-xs text-ink">
+        <p className="label text-ink-faint">Players remaining</p>
+        <p className="numeric text-xs text-ink">
           {hover ? hover.alive : end} <span className="text-ink-faint">/ {start}</span>
         </p>
       </div>

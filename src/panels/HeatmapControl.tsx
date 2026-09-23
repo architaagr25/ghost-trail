@@ -59,7 +59,7 @@ export function HeatmapControl({
             title={option.title}
             aria-pressed={option.value === mode}
             onClick={() => onChange(option.value)}
-            className={`rounded px-3 py-1.5 text-[11px] uppercase tracking-[0.15em] transition ${
+            className={`rounded px-3 py-1.5 label transition ${
               option.value === mode
                 ? 'bg-panel-raised text-signal'
                 : 'text-ink-faint hover:text-ink-dim'
@@ -79,14 +79,14 @@ export function HeatmapControl({
       {active && count > 0 && (
         <div className="flex items-center gap-3 rounded border border-edge bg-panel/80 px-3 py-2 backdrop-blur">
           <div className="flex items-center gap-1.5">
-            <span className="text-[9px] uppercase tracking-[0.15em] text-ink-faint">Low</span>
+            <span className="label text-ink-faint">Low</span>
             {/* Painted from the same stops the canvas uses. */}
             <span
               className="h-2 w-16 rounded-sm"
               style={{ background: rampCss() }}
               aria-hidden
             />
-            <span className="text-[9px] uppercase tracking-[0.15em] text-ink-faint">High</span>
+            <span className="label text-ink-faint">High</span>
           </div>
 
           <span className="h-4 w-px bg-edge" aria-hidden />
@@ -114,7 +114,7 @@ export function HeatmapControl({
             aria-pressed={!showTrails}
             title={showTrails ? 'Hide trails to read the field alone' : 'Show trails'}
             onClick={() => onToggleTrails(!showTrails)}
-            className={`flex items-center gap-1.5 rounded px-1.5 py-1 text-[10px] uppercase tracking-[0.15em] transition ${
+            className={`flex items-center gap-1.5 rounded px-1.5 py-1 label transition ${
               showTrails ? 'text-ink-faint hover:text-ink-dim' : 'text-signal'
             }`}
           >

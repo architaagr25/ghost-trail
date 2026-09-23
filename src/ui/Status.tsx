@@ -33,7 +33,7 @@ export function StatusPanel({
           </div>
         )}
         <p
-          className={`text-xs uppercase tracking-[0.25em] ${
+          className={`label-lg ${
             tone === 'alert' ? 'text-alert' : 'text-ink-dim'
           }`}
         >
@@ -45,7 +45,7 @@ export function StatusPanel({
           <button
             type="button"
             onClick={action.onClick}
-            className="mt-5 rounded border border-edge px-3.5 py-2 text-[11px] uppercase tracking-[0.15em] text-ink-dim transition hover:border-edge-bright hover:text-ink"
+            className="mt-5 rounded border border-edge px-3.5 py-2 label text-ink-dim transition hover:border-edge-bright hover:text-ink"
           >
             {action.label}
           </button>
@@ -67,7 +67,7 @@ export function Loading({ label }: { label: string }) {
         <div className="mx-auto h-0.5 w-24 overflow-hidden rounded bg-edge">
           <div className="h-full w-1/3 animate-[sweep_1.1s_ease-in-out_infinite] rounded bg-signal" />
         </div>
-        <p className="mt-3 text-[11px] uppercase tracking-[0.25em] text-ink-faint">{label}</p>
+        <p className="mt-3 label text-ink-faint">{label}</p>
       </div>
     </div>
   )

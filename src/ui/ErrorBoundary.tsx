@@ -40,13 +40,13 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full border border-alert/40 text-alert">
             <TriangleAlert size={17} />
           </div>
-          <p className="text-xs uppercase tracking-[0.25em] text-alert">Something broke</p>
+          <p className="label-lg text-alert">Something broke</p>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">{error.message}</p>
 
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-5 inline-flex items-center gap-2 rounded border border-edge px-3.5 py-2 text-[11px] uppercase tracking-[0.15em] text-ink-dim transition hover:border-edge-bright hover:text-ink"
+            className="mt-5 inline-flex items-center gap-2 rounded border border-edge px-3.5 py-2 label text-ink-dim transition hover:border-edge-bright hover:text-ink"
           >
             <RotateCcw size={13} />
             Reload

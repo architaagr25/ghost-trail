@@ -35,7 +35,7 @@ export function Timeline({ selection }: { selection: Selection }) {
   if (!match) {
     return (
       <footer className="flex h-16 items-center justify-center border-t border-edge bg-panel px-6">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-ink-faint">
+        <p className="label text-ink-faint">
           {selection.matches.length
             ? `Select a single match to play it back — ${selection.matches.length} in view`
             : 'No matches in view'}
@@ -70,7 +70,7 @@ export function Timeline({ selection }: { selection: Selection }) {
         {playing ? <Pause size={15} /> : atEnd ? <RotateCcw size={15} /> : <Play size={15} />}
       </button>
 
-      <p className="w-20 shrink-0 tabular-nums text-xs text-ink sm:w-24 sm:text-sm">
+      <p className="w-20 shrink-0 numeric text-xs text-ink sm:w-24 sm:text-sm">
         {formatClock(time)}
         <span className="text-ink-faint"> / {formatClock(duration)}</span>
       </p>
@@ -120,7 +120,7 @@ export function Timeline({ selection }: { selection: Selection }) {
             // The extremes fold away first on a narrow window. They are the
             // least used, and a wrapped transport bar is worse than a shorter
             // set of speeds.
-            className={`rounded px-2 py-1 text-[11px] tabular-nums transition ${
+            className={`rounded px-2 py-1 text-[11px] numeric transition ${
               option === 0.5 || option === 8 ? 'hidden lg:block' : ''
             } ${
               option === speed

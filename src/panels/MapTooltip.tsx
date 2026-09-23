@@ -48,7 +48,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-3">
       <dt className="text-ink-faint">{label}</dt>
-      <dd className="text-ink">{value}</dd>
+      <dd className="numeric text-ink">{value}</dd>
     </div>
   )
 }

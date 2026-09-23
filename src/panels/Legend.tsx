@@ -15,7 +15,7 @@ const CATEGORIES: EventCategory[] = ['kill', 'death', 'loot', 'storm']
 export function Legend() {
   return (
     <div>
-      <p className="mb-2.5 text-[10px] uppercase tracking-[0.25em] text-signal-dim">
+      <p className="mb-2.5 label text-accent">
         Signal legend
       </p>
 

@@ -313,7 +313,7 @@ export function MapStage({ data, selection }: MapStageProps) {
       />
 
       <div className="pointer-events-none absolute left-6 top-5 select-none">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-ink-faint">Map sector</p>
+        <p className="label text-ink-faint">Map sector</p>
         <h2 className="text-xl font-medium tracking-wide text-ink">{data.label}</h2>
       </div>
 

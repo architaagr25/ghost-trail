@@ -66,7 +66,7 @@ export function FilterRail({
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-edge bg-panel">
       <div className="flex items-center justify-between border-b border-edge py-4 pl-5 pr-3">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-signal-dim">Query control</p>
+        <p className="label text-accent">Query control</p>
         <button
           type="button"
           aria-label="Hide query control"
@@ -130,7 +130,7 @@ export function FilterRail({
                     style={{ background: cssColor(EVENT_COLOR[category]) }}
                   />
                   <span className="flex-1 text-xs text-ink-dim">{EVENT_LABEL[category]}</span>
-                  <span className="text-[10px] tabular-nums text-ink-faint">
+                  <span className="text-[10px] numeric text-ink-faint">
                     {selection.totals.events[category]}
                   </span>
                 </label>
@@ -141,7 +141,7 @@ export function FilterRail({
       </div>
 
       <div className="border-t border-edge bg-panel-raised px-5 py-4">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-ink-faint">Query result</p>
+        <p className="label text-ink-faint">Query result</p>
         <p className="mt-1.5 text-xs text-ink">
           {selection.matches.length} {selection.matches.length === 1 ? 'match' : 'matches'} ·{' '}
           {selection.players.length} shown
@@ -178,7 +178,7 @@ function ClassToggle({
     >
       {icon}
       {label}
-      <span className="text-[10px] tabular-nums opacity-70">{count}</span>
+      <span className="text-[10px] numeric opacity-70">{count}</span>
     </button>
   )
 }

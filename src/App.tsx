@@ -61,7 +61,7 @@ export default function App() {
         </span>
         <div className="min-w-0">
           <h1 className="text-sm font-semibold uppercase tracking-[0.2em] text-ink">Ghost Trail</h1>
-          <p className="truncate text-[10px] uppercase tracking-[0.2em] text-ink-faint">
+          <p className="truncate label text-ink-faint">
             Lila Black / Level Intel
           </p>
         </div>

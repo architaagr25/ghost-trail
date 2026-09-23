@@ -29,7 +29,7 @@ export function RailHandle({
     >
       <Chevron size={15} />
       <span
-        className="text-[10px] uppercase tracking-[0.25em]"
+        className="label"
         style={{ writingMode: 'vertical-rl' }}
       >
         {label}
