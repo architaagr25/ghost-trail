@@ -4,11 +4,36 @@ import { walkDashes } from './dash'
 import type { Projection } from './projection'
 import { COLORS } from './style'
 
-/** Widths and opacities in screen pixels, held steady as the viewport zooms. */
-const HUMAN_WIDTH = 1.3
-const HUMAN_ALPHA = 0.34
-const BOT_WIDTH = 1
-const BOT_ALPHA = 0.26
+/** A stroke weight, in screen pixels and opacity. */
+interface Weight {
+  width: number
+  alpha: number
+}
+
+/**
+ * The two ends of the emphasis ramp.
+ *
+ * One match is a couple of dozen journeys and carries full-weight strokes. A
+ * whole map is hundreds, where that same weight overlaps into a solid mat with
+ * no routes readable in it, so the crowded end is deliberately faint.
+ */
+const HUMAN_SPARSE: Weight = { width: 2.3, alpha: 0.92 }
+const HUMAN_DENSE: Weight = { width: 1.5, alpha: 0.42 }
+const BOT_SPARSE: Weight = { width: 1.8, alpha: 0.7 }
+const BOT_DENSE: Weight = { width: 1.1, alpha: 0.3 }
+
+/** Trail counts bracketing that ramp: one match against a whole map. */
+const SPARSE_TRAILS = 24
+const DENSE_TRAILS = 400
+
+/**
+ * Zoomed out, a journey covers a fraction of the pixels it does up close, so
+ * the same stroke leaves far less ink to find it by. This lifts the weight at
+ * fit zoom and eases it away once the view is this far in.
+ */
+const ZOOM_RELIEF = 4
+const ZOOM_LIFT = 0.25
+
 const BOT_DASH = 6
 const BOT_GAP = 5
 
@@ -22,11 +47,22 @@ const MAX_DASH_ZOOM = 4
 
 /** How far unselected trails fade back once a player is picked out. */
 const UNSELECTED_FADE = 0.22
-const SELECTED_WIDTH = 2.4
+const SELECTED_WIDTH = 3.2
 const SELECTED_ALPHA = 1
 
 /** Radius of the dot marking where a player is at the current playhead. */
 const HEAD_RADIUS = 3
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value))
+}
+
+function blend(dense: Weight, sparse: Weight, t: number): Weight {
+  return {
+    width: dense.width + (sparse.width - dense.width) * t,
+    alpha: dense.alpha + (sparse.alpha - dense.alpha) * t,
+  }
+}
 
 /**
  * Draws player movement paths, keeping bots visually apart from humans.
@@ -122,15 +158,33 @@ export class TrailLayer {
     // Everything else recedes so the picked route stays readable.
     const fade = this.selected === null ? 1 : UNSELECTED_FADE
 
+    const emphasis = this.emphasis()
+    const human = blend(HUMAN_DENSE, HUMAN_SPARSE, emphasis)
+    const bot = blend(BOT_DENSE, BOT_SPARSE, emphasis)
+
     for (const trail of this.trails) {
       if (trail.x.length < 2) continue
       if (trail === this.selected) continue
-      if (trail.b) this.drawBot(trail, fade)
-      else this.drawHuman(trail, fade)
+      if (trail.b) this.drawBot(trail, bot, fade)
+      else this.drawHuman(trail, human, fade)
     }
 
     if (this.selected && this.selected.x.length > 1) this.drawSelected(this.selected)
     if (this.limit !== null) this.drawHeads()
+  }
+
+  /**
+   * How boldly to draw, on a 0-1 scale from a crowded map to a single match.
+   *
+   * Count does most of the work: the faintness that keeps hundreds of
+   * overlapping journeys readable leaves twenty of them nearly invisible. Zoom
+   * adds a smaller lift on top, since the same trail is only a short scratch
+   * once the whole map is on screen.
+   */
+  private emphasis(): number {
+    const crowd = (this.trails.length - SPARSE_TRAILS) / (DENSE_TRAILS - SPARSE_TRAILS)
+    const out = (this.zoom - 1) / (ZOOM_RELIEF - 1)
+    return clamp01(1 - clamp01(crowd) + (1 - clamp01(out)) * ZOOM_LIFT)
   }
 
   /**
@@ -200,19 +254,19 @@ export class TrailLayer {
     }
   }
 
-  private drawHuman(trail: PlayerTrail, fade: number): void {
+  private drawHuman(trail: PlayerTrail, weight: Weight, fade: number): void {
     const g = this.humanGraphics
     this.tracePath(g, trail)
     g.stroke({
-      width: HUMAN_WIDTH / this.zoom,
+      width: weight.width / this.zoom,
       color: COLORS.human,
-      alpha: HUMAN_ALPHA * fade,
+      alpha: weight.alpha * fade,
       cap: 'round',
       join: 'round',
     })
   }
 
-  private drawBot(trail: PlayerTrail, fade: number): void {
+  private drawBot(trail: PlayerTrail, weight: Weight, fade: number): void {
     const g = this.botGraphics
 
     // Dashes are measured in screen pixels, so the pattern is divided by the
@@ -227,9 +281,9 @@ export class TrailLayer {
     }
 
     g.stroke({
-      width: BOT_WIDTH / this.zoom,
+      width: weight.width / this.zoom,
       color: COLORS.bot,
-      alpha: BOT_ALPHA * fade,
+      alpha: weight.alpha * fade,
       cap: 'butt',
     })
   }
