@@ -16,11 +16,9 @@ export interface PlayerStats {
 }
 
 /**
- * Totals for one journey.
- *
- * Distance is summed along the trail and deliberately skips recording gaps: a
- * straight line across a gap is an artefact of the sampling, and counting it
- * would inflate distance and pace for exactly the players whose data is worst.
+ * Totals for one journey. Distance skips recording gaps -- the line across a
+ * gap is a sampling artefact, and counting it would flatter exactly the
+ * players whose data is worst.
  */
 export function playerStats(
   player: PlayerTrail,
@@ -65,14 +63,12 @@ export interface SurvivalPoint {
 }
 
 /**
- * Players still alive over the course of a match.
+ * Players still alive through a match.
  *
  * Built from the match's own events rather than the filtered selection: the
- * curve describes what happened in the match, and it should not change shape
- * because someone hid bots or unticked storm deaths.
- *
- * Nobody is recorded leaving alive, so the curve ends wherever the last death
- * left it rather than dropping to zero.
+ * curve describes the match, and should not change shape because someone hid
+ * bots. Nobody is recorded leaving alive, so it ends wherever the last death
+ * left it rather than falling to zero.
  */
 export function survivalCurve(data: MapData, match: MatchSummary): SurvivalPoint[] {
   const matchIndex = data.matches.indexOf(match)

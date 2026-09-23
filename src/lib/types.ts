@@ -52,10 +52,7 @@ export interface PlayerTrail {
   t: number[]
   x: number[]
   z: number[]
-  /**
-   * Indices where recording dropped out and the trail must be cut rather than
-   * bridged. Each index is the first point of a new segment.
-   */
+  /** Where recording dropped out. Each index is the first point of a new run. */
   breaks: number[]
 }
 

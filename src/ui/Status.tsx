@@ -1,10 +1,9 @@
 /**
  * The in-between screens: loading, nothing found, something broke.
  *
- * All three share one shape so they read as the same kind of message rather
- * than three unrelated bits of text, and every one of them says what to do
- * next -- a bare "no results" leaves the reader guessing which control caused
- * it.
+ * All three share a shape so they read as one kind of message, and each says
+ * what to do next -- a bare "no results" leaves you guessing which control
+ * caused it.
  */
 export function StatusPanel({
   icon,
@@ -56,9 +55,9 @@ export function StatusPanel({
 }
 
 /**
- * A sweep rather than a spin. Loading here is a fetch plus a parse of a few
- * hundred kilobytes -- short enough that a heavy spinner draws more attention
- * to the wait than the wait deserves.
+ * A sweep rather than a spinner. This is a fetch and a parse of a few hundred
+ * kilobytes -- short enough that a spinner would make more of the wait than it
+ * deserves.
  */
 export function Loading({ label }: { label: string }) {
   return (

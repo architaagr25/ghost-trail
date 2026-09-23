@@ -6,19 +6,17 @@ import { ALL } from '../lib/filters'
 import { formatClock, formatMatchTime } from '../lib/format'
 
 /**
- * Rendering every match at once is wasted work on a map with hundreds of them,
- * and a list that long is not browsable anyway. Past this the search box is the
- * way through, and the footer says so.
+ * A list of hundreds is not browsable anyway, so past this only a slice is
+ * rendered and the footer points at the search box instead.
  */
 const VISIBLE_LIMIT = 100
 
 /**
  * Picks one match out of the hundreds on a map.
  *
- * A plain dropdown does not work at this length, so this one has a search box
- * and shows each match with the detail needed to choose between them -- when it
- * ran, how long it lasted, and how many humans, bots and kills it held. Match
- * ids are opaque UUIDs; nobody picks a match by id alone.
+ * Match ids are opaque UUIDs, so a plain dropdown of them is useless. Each row
+ * carries what you actually choose on -- when it ran, how long it lasted, how
+ * many humans, bots and kills it held -- with a search box over the top.
  */
 export function MatchPicker({
   matches,

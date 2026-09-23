@@ -7,16 +7,12 @@ import { EVENT_COLOR, MARKER_OUTLINE, MARKER_RADIUS } from './style'
 const DRAW_ORDER: EventCategory[] = ['loot', 'death', 'kill', 'storm']
 
 /**
- * Draws the discrete things that happened: kills, deaths, loot pickups and
- * storm deaths.
+ * Draws kills, deaths, loot pickups and storm deaths.
  *
- * Each category gets its own shape as well as its own colour. Shape carries the
- * meaning on its own, so the markers stay distinguishable where several land on
- * the same building, in a screenshot, or for a colour blind reader.
- *
- * Markers are sized in screen pixels and redrawn on zoom. Scaling them with the
- * map would make them either invisible when zoomed out or cover half a
- * compound when zoomed in.
+ * Every category has its own shape as well as its own colour, so the markers
+ * stay readable where several land on one building and for a colour blind
+ * reader. Sizes are in screen pixels and redrawn on zoom -- scaling with the
+ * map would leave them invisible zoomed out and covering a compound zoomed in.
  */
 export class EventLayer {
   readonly view = new Container()
@@ -84,8 +80,7 @@ export class EventLayer {
         drawMarker(g, category, x, y, radius)
       }
 
-      // Fill then outline in one pass each. The outline separates the marker
-      // from whatever trail runs underneath it.
+      // Fill, then outline to lift the marker off the trails beneath it.
       g.fill({ color: EVENT_COLOR[category], alpha: 0.95 })
       g.stroke({ width: 1.1 / this.zoom, color: MARKER_OUTLINE, alpha: 0.85 })
     }
@@ -111,8 +106,8 @@ function drawMarker(
       g.poly([x, y - r, x + thin, y - thin, x + r, y, x + thin, y + thin, x, y + r, x - thin, y + thin, x - r, y, x - thin, y - thin])
       return
     }
-    // A cross. Read against the kill burst it is the opposite silhouette:
-    // arms on the diagonals rather than on the axes.
+    // A cross -- the opposite silhouette to the kill burst, arms on the
+    // diagonals rather than the axes.
     case 'death': {
       const arm = r * 0.95
       const half = r * 0.3

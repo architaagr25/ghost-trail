@@ -6,9 +6,8 @@ export function formatClock(seconds: number): string {
 }
 
 /**
- * Journey identifiers are either a UUID for a human or a short numeric id for a
- * bot. Full UUIDs are too long to read in a panel, so humans are shown by their
- * leading block, which is unique across the 245 humans in the data.
+ * Humans carry a UUID, bots a short numeric id. A full UUID is unreadable in a
+ * panel, so humans show their leading block -- unique across all 245 of them.
  */
 export function shortId(userId: string): string {
   return userId.includes('-') ? userId.split('-')[0] : userId

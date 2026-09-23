@@ -67,9 +67,9 @@ const ALL_EVENTS: Record<EventCategory, boolean> = {
 /**
  * Filter and playback state for the whole tool.
  *
- * This lives in a store rather than in component state because the rail, the
- * map, the timeline and the detail panels all read the same selection, and
- * passing it down would mean threading it through every layer of the tree.
+ * In a store rather than component state because the rail, the map, the
+ * timeline and the detail panels all read the same selection, and passing it
+ * down would mean threading it through every layer of the tree.
  */
 export const useApp = create<AppState>((set, get) => ({
   index: null,
@@ -147,8 +147,8 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   setMatch(matchId) {
-    // A different match has its own clock, so the playhead goes back to zero
-    // and playback stops rather than running on into unrelated data.
+    // A different match has its own clock, so the playhead resets rather than
+    // running on into unrelated data.
     set({ matchId, time: 0, playing: false, selectedPlayer: null })
   },
 

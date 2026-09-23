@@ -6,22 +6,20 @@ import { formatClock } from '../lib/format'
 import { EVENT_COLOR, cssColor } from '../map/style'
 
 /**
- * Above this many events the tick marks stop being individually readable and
- * become a solid bar, so only a sample is drawn. They are a guide to where the
- * action is, not a count.
+ * Past this many, the ticks merge into a solid bar, so only a sample is drawn.
+ * They point at where the action is; they are not a count.
  */
 const MAX_TICKS = 400
 
 /**
  * The match clock and transport.
  *
- * A scrubber alone tells you nothing about where to scrub to, so the track is
+ * A bare scrubber tells you nothing about where to scrub to, so the track is
  * marked with every event in the match, coloured by type. Combat and looting
- * come in bursts, and the marks make those bursts visible before you go looking
- * for them -- you can see a firefight at 4:20 and jump straight to it.
+ * come in bursts, so you can spot a firefight at 4:20 and jump straight to it.
  *
- * Only meaningful for a single match: with several selected there is no shared
- * clock to scrub along, so the bar says so instead of showing a misleading one.
+ * Only meaningful for a single match -- across several there is no shared clock
+ * to scrub along, so the bar says so rather than showing a misleading one.
  */
 export function Timeline({ selection }: { selection: Selection }) {
   const time = useApp((state) => state.time)
@@ -117,9 +115,8 @@ export function Timeline({ selection }: { selection: Selection }) {
             type="button"
             onClick={() => setSpeed(option)}
             aria-pressed={option === speed}
-            // The extremes fold away first on a narrow window. They are the
-            // least used, and a wrapped transport bar is worse than a shorter
-            // set of speeds.
+            // The extremes fold away first on a narrow window; a wrapped
+            // transport bar is worse than a shorter set of speeds.
             className={`rounded px-2 py-1 text-[11px] numeric transition ${
               option === 0.5 || option === 8 ? 'hidden lg:block' : ''
             } ${

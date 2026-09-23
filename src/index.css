@@ -1,9 +1,7 @@
 @import 'tailwindcss';
 
-/*
- * Ghost Trail runs dark-only. It is a HUD sitting on top of dark minimap art,
- * and a light theme would wash out the trail and heatmap colours.
- */
+/* Dark only. This is a HUD over dark minimap art, and a light theme would wash
+   the trail and heatmap colours out. */
 @theme {
   --color-void: #05090c;
   --color-panel: #0a1116;
@@ -11,20 +9,14 @@
   --color-edge: #16262f;
   --color-edge-bright: #1f3a46;
 
-  /*
-   * Text steps, all checked against --color-panel. ink-faint carries the small
-   * uppercase labels, so it has to clear 4.5:1 rather than sitting at the
-   * decorative grey it started as.
-   */
+  /* Text steps, contrast checked against --color-panel. ink-faint carries the
+     small uppercase labels, so it has to clear 4.5:1. */
   --color-ink: #dceaf0; /* 15.5:1 */
   --color-ink-dim: #7d97a3; /* 6.2:1 */
   --color-ink-faint: #6b8593; /* 4.9:1 */
 
-  /*
-   * Two cyans with different jobs. signal-dim is a border and only ever borders
-   * -- at 3.6:1 it is not safe for the 10px headings it used to carry, so those
-   * use accent instead.
-   */
+  /* Two cyans with different jobs. signal-dim is borders only -- at 3.6:1 it is
+     not safe for text, which uses accent instead. */
   --color-signal: #2ce8d5;
   --color-signal-dim: #17786f;
   --color-accent: #2bbcae; /* 8.1:1 */
@@ -37,10 +29,8 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
-/*
- * Small caps labels. The same three declarations appeared on every panel
- * heading and stat label; naming them keeps the rhythm identical everywhere.
- */
+/* Small caps labels, otherwise repeated on every panel heading and stat label.
+   Naming them keeps the rhythm identical everywhere. */
 @utility label {
   font-size: 10px;
   line-height: 1.4;
@@ -56,10 +46,8 @@
   letter-spacing: 0.25em;
 }
 
-/*
- * Anything that is a number, an id or a clock reading. Mono keeps digits from
- * shifting the layout as they tick, and sets identifiers apart from prose.
- */
+/* Numbers, ids and clock readings. Tabular digits stop a ticking clock
+   shifting the layout around it. */
 @utility numeric {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

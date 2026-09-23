@@ -6,14 +6,12 @@ import type { Projection } from './projection'
 /**
  * Renders a density field over the minimap.
  *
- * The field is computed on a small grid, painted into an offscreen canvas and
- * uploaded as a single texture. One stretched sprite costs one draw call
- * however busy the map is, where drawing a blob per sample would mean tens of
- * thousands of overlapping shapes.
+ * The field is computed on a small grid, painted offscreen and uploaded as one
+ * texture, so a busy map still costs a single draw call where a blob per sample
+ * would mean tens of thousands of overlapping shapes.
  *
- * Letting the GPU scale a 256 pixel texture up to the full map is what gives
- * the field its smooth falloff, so the magnification is deliberate rather than
- * something to correct for.
+ * The GPU stretching that 256px texture is what gives the field its smooth
+ * falloff, so the blur is deliberate rather than something to correct for.
  */
 export class HeatmapLayer {
   readonly view = new Container()
@@ -81,8 +79,8 @@ export class HeatmapLayer {
     const image = colorize(grid, normalisingMax(grid), this.intensity)
     this.context.putImageData(image, 0, 0)
 
-    // Replaced wholesale rather than updated in place: Pixi caches uploaded
-    // texture data, and a fresh source is the reliable way to invalidate it.
+    // Replaced rather than updated in place: Pixi caches uploaded texture
+    // data, and a fresh source is the reliable way to invalidate it.
     this.sprite?.destroy()
     this.view.removeChildren()
 

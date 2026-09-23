@@ -11,9 +11,8 @@ export interface Option {
 /**
  * A dropdown for short, fixed lists such as maps and dates.
  *
- * Built on Radix so keyboard navigation, focus handling and typeahead come for
- * free. Long lists such as the match picker need search and use their own
- * control instead.
+ * Radix, so keyboard navigation, focus handling and typeahead come for free.
+ * Long lists need search and use the match picker instead.
  */
 export function Select({
   value,

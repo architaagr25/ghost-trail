@@ -1,16 +1,15 @@
 import type { EventCategory } from '../lib/types'
 
 /**
- * Canvas colours, kept numeric for Pixi. They mirror the CSS custom properties
- * in `index.css`; when one side changes the other has to follow.
+ * Trail and event colours, numeric for Pixi. This is where they live -- the DOM
+ * side reads them back through `cssColor` rather than from CSS.
  */
 export const COLORS = {
   human: 0x2ce8d5,
   bot: 0xf0a12e,
-  // Kill and death are the pair most often read against each other, so they sit
-  // at opposite ends of the range rather than as two neighbouring reds. Storm
-  // moves to yellow for the same reason: it was close enough to the kill red to
-  // be mistaken for it.
+  // Kill and death get read against each other constantly, so they sit at
+  // opposite ends rather than as two neighbouring reds. Storm is yellow for the
+  // same reason: as orange it was too easy to mistake for a kill.
   kill: 0xff2f45,
   death: 0xeef6ff,
   loot: 0xb46bff,
@@ -18,9 +17,8 @@ export const COLORS = {
 } as const
 
 /**
- * Markers carry a dark outline. Trails are bright and dense enough that an
- * unoutlined marker disappears into them wherever routes converge -- which is
- * exactly where the events are.
+ * Markers need a dark outline: trails are bright enough to swallow one wherever
+ * routes converge, which is exactly where the events are.
  */
 export const MARKER_OUTLINE = 0x05090c
 
@@ -41,10 +39,9 @@ export const EVENT_LABEL: Record<EventCategory, string> = {
 /**
  * Hex string for a Pixi colour, for the DOM side of the UI.
  *
- * The legend and panels read their colours from this table rather than from the
- * CSS custom properties. Tailwind only emits theme tokens it can see referenced
- * literally in the source, so a name built at runtime silently resolves to
- * nothing -- and one table feeding both canvas and DOM cannot drift anyway.
+ * Tailwind only emits theme tokens it sees written out literally, so a class
+ * name assembled at runtime resolves to nothing. Reading this table instead
+ * keeps the legend and the canvas on one set of colours.
  */
 export function cssColor(value: number): string {
   return `#${value.toString(16).padStart(6, '0')}`

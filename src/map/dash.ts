@@ -1,10 +1,8 @@
 /**
- * Walks a polyline emitting alternating on/off runs, so a path can be stroked
- * as a dashed line.
+ * Walks a polyline, handing each dash to the callback as a pair of endpoints.
  *
- * Pixi has no dash support, and bot trails need to read as distinct from human
- * ones at a glance even where the two overlap -- colour alone gets lost in a
- * pile-up. The callback receives each dash as a pair of endpoints.
+ * Pixi has no dashed strokes, and bot trails have to stay distinct from human
+ * ones where the two overlap -- colour alone gets lost in a pile-up.
  */
 export function walkDashes(
   points: ReadonlyArray<readonly [number, number]>,
@@ -15,8 +13,7 @@ export function walkDashes(
   if (points.length < 2) return
 
   let penDown = true
-  // How much of the current dash or gap is still owed, carried across segment
-  // boundaries so the pattern stays continuous around corners.
+  // Carried across segment boundaries so the pattern survives corners.
   let remaining = dash
 
   for (let i = 1; i < points.length; i += 1) {

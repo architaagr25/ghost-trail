@@ -13,9 +13,8 @@ import { Loading, StatusPanel } from './ui/Status'
 import { useRailLayout } from './ui/useRailLayout'
 
 /**
- * Two rails at 288px plus a map needs room. Below this the map gets squeezed to
- * the point of being unreadable, which defeats the purpose of the tool, so the
- * rails start collapsed and open over the map rather than beside it.
+ * Below this width, two 288px rails squeeze the map too far to read, so they
+ * start collapsed and open over it instead of beside it.
  */
 const WIDE = '(min-width: 1280px)'
 
@@ -49,8 +48,7 @@ export default function App() {
   usePlayback(duration)
   useKeyboard(duration)
 
-  // On a wide screen the rails sit in the flex row. On a narrow one they float
-  // over the map, so the map keeps its full width either way.
+  // Narrow screens float the rails over the map so it keeps its full width.
   const floating = 'absolute inset-y-0 z-20 shadow-2xl shadow-black/60'
 
   return (

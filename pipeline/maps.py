@@ -1,17 +1,15 @@
 """Per-map world-to-minimap configuration.
 
-The scale and origin values come from the dataset README. They place a world
-(x, z) pair into a 0-1 UV square that covers the whole playable area:
+Scale and origin come from the dataset README and put a world (x, z) into a 0-1
+square covering the playable area:
 
     u = (x - origin_x) / scale
     v = (z - origin_z) / scale
 
-The renderer turns UV into pixels, flipping V because image origin is top-left
-while world Z grows northward. Verified against the shipped telemetry: 100% of
-rows on all three maps land inside the unit square, and plotted points follow
-roads and cluster on buildings rather than drifting into the sea.
-
-The `y` column is elevation and plays no part in the 2D projection.
+The renderer turns that into pixels, flipping V because image Y grows downward
+while world Z grows north. Checked against the telemetry: every row on all three
+maps lands inside the square, and plotted points follow roads rather than
+drifting into the sea. The `y` column is elevation and is not used.
 """
 
 from dataclasses import dataclass

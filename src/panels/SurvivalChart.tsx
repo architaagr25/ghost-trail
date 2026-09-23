@@ -11,13 +11,13 @@ const PAD_BOTTOM = 12
 /**
  * Players still alive across a match.
  *
- * Drawn as a step line because the underlying quantity is a step: the count
- * holds flat and drops by one the instant someone dies. Interpolating between
- * deaths would draw a smooth decline that never happened.
+ * A step line, because the quantity is a step: it holds flat and drops by one
+ * the instant someone dies. Interpolating would draw a smooth decline that
+ * never happened.
  *
- * One series, so there is no legend -- the heading names it -- and the ends are
- * labelled directly rather than every point carrying a number. The playhead is
- * drawn over it so the curve reads against wherever playback has reached.
+ * One series, so no legend -- the heading names it -- and only the ends are
+ * labelled. The playhead is drawn over the top so the curve reads against
+ * wherever playback has reached.
  */
 export function SurvivalChart({
   points,

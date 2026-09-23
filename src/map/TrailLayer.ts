@@ -13,11 +13,10 @@ const BOT_DASH = 6
 const BOT_GAP = 5
 
 /**
- * Dash length is normally held constant on screen, which means dividing by the
- * zoom factor. Past this zoom that division is capped: the dashes would keep
- * shrinking in map space while the full set of trails is still being drawn,
- * generating hundreds of thousands of tiny segments for no visible gain.
- * Beyond the cap dashes simply grow on screen, which still reads as dashed.
+ * Dashes are held at a constant screen size by dividing by the zoom factor.
+ * Past this point that division is capped -- otherwise they keep shrinking in
+ * map space and generate hundreds of thousands of segments for no visible gain.
+ * Beyond the cap they simply grow on screen, which still reads as dashed.
  */
 const MAX_DASH_ZOOM = 4
 
@@ -30,18 +29,15 @@ const SELECTED_ALPHA = 1
 const HEAD_RADIUS = 3
 
 /**
- * Draws player movement paths, with bots visually separated from humans.
+ * Draws player movement paths, keeping bots visually apart from humans.
  *
- * Humans are solid cyan and sit on top; bots are a dashed, dimmer amber
- * underneath. Bots outnumber humans in most matches, so drawing them beneath
- * and at lower contrast keeps the human routes -- the ones a designer is
- * usually reading -- legible through the crowd. The two differ in colour,
- * weight and line style, so neither colour blindness nor a dense overlap makes
- * them ambiguous.
+ * Humans are solid cyan on top, bots dashed amber underneath. Bots outnumber
+ * humans in most matches, so pushing them down and back keeps the human routes
+ * legible through the crowd. Colour, weight and line style all differ, so
+ * neither colour blindness nor a dense overlap makes the two ambiguous.
  *
- * Humans and bots get one Graphics each rather than one per player: Pixi
- * batches within an object, so this is a handful of draw calls instead of
- * hundreds.
+ * One Graphics per class rather than per player -- Pixi batches within an
+ * object, so this is a handful of draw calls instead of hundreds.
  */
 export class TrailLayer {
   readonly view = new Container()
@@ -69,10 +65,8 @@ export class TrailLayer {
   }
 
   /**
-   * The selected trail, by identity, or null to clear.
-   *
-   * Identity rather than an index, because filtering rebuilds the array and an
-   * index would then point at a different player.
+   * The selected trail, or null to clear. Held by identity because filtering
+   * rebuilds the array and an index would then point at someone else.
    */
   setSelection(trail: PlayerTrail | null): void {
     if (trail === this.selected) return
@@ -125,8 +119,7 @@ export class TrailLayer {
     this.selectedGraphics.clear()
     this.headGraphics.clear()
 
-    // Everything else recedes while one player is picked out, so the selected
-    // route stays readable through the crowd it is drawn over.
+    // Everything else recedes so the picked route stays readable.
     const fade = this.selected === null ? 1 : UNSELECTED_FADE
 
     for (const trail of this.trails) {
@@ -141,11 +134,9 @@ export class TrailLayer {
   }
 
   /**
-   * Number of points revealed at the current playhead.
-   *
-   * Trail samples are in ascending time order, so this is a scan for the first
-   * point past the limit. The arrays are short -- about 60 points for a typical
-   * journey -- so a linear scan beats the bookkeeping a binary search needs.
+   * Number of points revealed at the current playhead. Samples are in time
+   * order, and a typical journey is only about 60 points, so a linear scan
+   * beats the bookkeeping a binary search would need.
    */
   private revealed(trail: PlayerTrail): number {
     if (this.limit === null) return trail.x.length
@@ -155,10 +146,8 @@ export class TrailLayer {
   }
 
   /**
-   * A dot at each player's latest known position.
-   *
-   * A path that grows from its far end is hard to follow; the dot says where
-   * everyone is right now, which is what playback is being watched for.
+   * A dot at each player's latest known position. A path growing from its far
+   * end is hard to follow; the dot says where everyone is right now.
    */
   private drawHeads(): void {
     const g = this.headGraphics

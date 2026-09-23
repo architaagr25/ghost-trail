@@ -1,9 +1,8 @@
 import { MAP_SIZE } from './constants'
 
 /**
- * Density grid resolution. At 256 each cell covers roughly three metres of
- * ground on the largest map, which is finer than the five second position
- * sampling can actually resolve -- there is nothing to gain from going higher.
+ * Grid resolution. At 256 a cell is about three metres on the largest map,
+ * already finer than five-second position sampling can resolve.
  */
 export const GRID = 256
 
@@ -12,19 +11,17 @@ const BLUR_RADIUS = 4
 const BLUR_PASSES = 3
 
 /**
- * Hotspots are long tailed: one heavily camped doorway can hold an order of
- * magnitude more samples than anywhere else, and scaling to the true maximum
- * would flatten the rest of the map to black. Normalising to a high percentile
- * keeps the ordinary range readable and lets the extreme simply clip.
+ * Hotspots are long tailed -- one camped doorway can hold ten times what
+ * anywhere else does, and scaling to the true maximum flattens the rest of the
+ * map to black. A high percentile keeps the ordinary range readable and lets
+ * the extreme clip.
  */
 const NORMALISE_PERCENTILE = 0.99
 
 /**
- * Sequential ramp, one hue, rising in lightness and opacity together.
- *
- * Transparent at the bottom so empty ground shows the minimap rather than a
- * wash of colour, and no second hue anywhere -- a rainbow ramp would invent
- * boundaries in what is a smooth quantity.
+ * One hue, rising in lightness and opacity together. Transparent at the bottom
+ * so empty ground shows the minimap, and no second hue anywhere -- a rainbow
+ * ramp invents boundaries in a smooth quantity.
  */
 const RAMP: Array<[number, number, number, number]> = [
   [0.0, 255, 122, 26],
@@ -34,10 +31,7 @@ const RAMP: Array<[number, number, number, number]> = [
 ]
 const RAMP_ALPHA = [0, 0.38, 0.68, 0.92]
 
-/**
- * The ramp as a CSS gradient, so the legend swatch is painted from the very
- * same stops the canvas uses and the two cannot drift apart.
- */
+/** The ramp as a CSS gradient, so the legend swatch uses the canvas's stops. */
 export function rampCss(): string {
   const stops = RAMP.map(([stop, r, g, b], index) => {
     const alpha = RAMP_ALPHA[index]
@@ -53,12 +47,11 @@ export interface DensityPoint {
 }
 
 /**
- * Buckets points into a blurred density field over the map.
+ * Buckets points into a blurred density field.
  *
- * A raw histogram of five-second position samples is a scatter of isolated
- * cells, not a surface. Blurring turns it into the continuous field a designer
- * reads as "this area is busy", and is what makes neighbouring routes merge
- * into a corridor rather than staying as separate specks.
+ * A raw histogram of five-second samples is a scatter of isolated cells, not a
+ * surface. Blurring merges neighbouring routes into the corridor a designer
+ * reads as "this area is busy".
  */
 export function buildDensity(
   points: DensityPoint[],
@@ -102,8 +95,7 @@ function boxBlurAxis(source: Float32Array, target: Float32Array, horizontal: boo
     for (let i = 0; i < GRID; i += 1) {
       let total = 0
       for (let offset = -BLUR_RADIUS; offset <= BLUR_RADIUS; offset += 1) {
-        // Clamp at the edges rather than wrapping, which would bleed one side
-        // of the map into the other.
+        // Clamp rather than wrap, or one edge bleeds into the other.
         const at = Math.min(GRID - 1, Math.max(0, i + offset))
         total += horizontal ? source[line * GRID + at] : source[at * GRID + line]
       }

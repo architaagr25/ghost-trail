@@ -1,7 +1,6 @@
 /**
- * The map is drawn in a fixed square of world-independent units. Every layer
- * positions itself in this space and the viewport scales the whole thing, so
- * nothing downstream has to care what resolution the minimap image is.
+ * Everything is drawn in a fixed square of map units and scaled by the
+ * viewport, so no layer has to know the minimap image's resolution.
  */
 export const MAP_SIZE = 1024
 

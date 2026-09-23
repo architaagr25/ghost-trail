@@ -1,8 +1,7 @@
 """Read the raw parquet journeys into one tidy frame.
 
-Every file under the dated folders is one player's journey through one match.
-They carry a `.nakama-0` extension rather than `.parquet`, but they are valid
-parquet and any reader opens them by path.
+Each file under the dated folders is one player's journey through one match.
+The `.nakama-0` extension is misleading -- they are ordinary parquet.
 """
 
 from __future__ import annotations
@@ -13,13 +12,11 @@ from pathlib import Path
 import pandas as pd
 import pyarrow.parquet as pq
 
-# Movement samples versus things that happened at a point in time. Splitting
-# them early keeps the trail builder and the event builder from re-filtering.
+# Movement samples, as opposed to point-in-time events.
 POSITION_EVENTS = {"Position", "BotPosition"}
 
-# The eight raw event names collapse into four things a designer cares about.
-# `Kill`/`BotKill` are "this player killed someone", `Killed`/`BotKilled` are
-# "this player died", regardless of whether the other party was human or a bot.
+# Kill and BotKill both mean "killed someone"; Killed and BotKilled both mean
+# "died". Who was on the other end does not change what happened here.
 EVENT_CATEGORY = {
     "Kill": "kill",
     "BotKill": "kill",
@@ -65,8 +62,7 @@ def read_journeys(root: Path) -> pd.DataFrame:
     df = pd.concat(frames, ignore_index=True)
     df["event"] = df["event"].map(_decode)
 
-    # The match_id carries the game server instance as a suffix. It is the same
-    # for every row here and only makes the id harder to read in the UI.
+    # Strip the server-instance suffix; it is identical on every row.
     df["match_id"] = df["match_id"].str.removesuffix(".nakama-0")
 
     df["is_bot"] = ~df["user_id"].str.contains("-", regex=False)
@@ -78,16 +74,12 @@ def read_journeys(root: Path) -> pd.DataFrame:
 
 
 def _wall_clock_seconds(ts: pd.Series) -> pd.Series:
-    """Recover real wall-clock seconds from the `ts` column.
+    """Recover wall-clock seconds from the `ts` column.
 
-    The column arrives typed as millisecond-resolution datetimes, and the
-    dataset README describes it as milliseconds elapsed within a match. Neither
-    is true. The underlying integers are epoch *seconds*, so reading them as
-    milliseconds lands every row in January 1970 and compresses matches into
-    well under a second.
-
-    Read as seconds they resolve to February 2026, matching the folder names,
-    and produce match lengths of roughly 13 to 890 seconds with position samples
-    every 5 seconds -- which is what a battle royale should look like.
+    The column is typed as millisecond datetimes and the dataset README calls it
+    milliseconds into the match. Both are wrong: the integers are epoch seconds.
+    Read as milliseconds every row lands in January 1970 and matches collapse to
+    under a second. Read as seconds they fall in February 2026, matching the
+    folder names, with 13-890s matches sampled every 5s.
     """
     return ts.astype("int64")

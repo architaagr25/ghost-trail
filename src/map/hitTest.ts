@@ -22,12 +22,10 @@ interface Cell {
 /**
  * A uniform grid over map space for pointer hit testing.
  *
- * A busy map carries 61,000 trail points and 12,000 events. Scanning all of
- * them on every pointer move would stall the UI, so both are bucketed once and
- * a lookup only examines the cells within the hit radius.
- *
- * Everything is stored in map units rather than screen pixels, so the index
- * survives panning and zooming untouched.
+ * A busy map carries 61,000 trail points and 12,000 events; scanning those on
+ * every pointer move stalls the UI, so both are bucketed once and a lookup only
+ * touches the cells inside the hit radius. Stored in map units, so panning and
+ * zooming leave the index alone.
  */
 export class HitIndex {
   private readonly players: PlayerTrail[]
@@ -58,10 +56,8 @@ export class HitIndex {
   }
 
   /**
-   * Nearest event within `radius`, or null.
-   *
-   * Events win over trails when both are under the pointer: a marker is a
-   * deliberate target, a trail is ambient.
+   * Nearest event within `radius`, or null. Events beat trails when both are
+   * under the pointer -- a marker is a deliberate target, a trail is ambient.
    */
   eventAt(x: number, y: number, radius: number): GameEvent | null {
     let best: GameEvent | null = null

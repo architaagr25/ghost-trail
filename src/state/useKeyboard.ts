@@ -7,11 +7,9 @@ const STEP = 5
 /**
  * Keyboard shortcuts for playback and selection.
  *
- * Scrubbing a replay is a two-handed job -- one hand on the map, one on the
- * clock -- so the transport is reachable without going back to the controls.
- *
- * Bound on the window rather than on a focused element so they work wherever
- * the pointer happens to be, with typing in a field excluded.
+ * Scrubbing a replay is two-handed -- one on the map, one on the clock -- so
+ * the transport stays reachable without going back to the controls. Bound on
+ * the window so they work wherever the pointer is, except while typing.
  */
 export function useKeyboard(duration: number | null): void {
   useEffect(() => {

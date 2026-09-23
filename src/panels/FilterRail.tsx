@@ -9,11 +9,9 @@ import { Select, type Option } from '../ui/Select'
 import { MatchPicker } from './MatchPicker'
 
 /**
- * The query controls.
- *
- * Ordered the way a designer narrows down: which map, then which day, then
- * which match, then what to show within it. Every control carries the count
- * behind it, so the scope of what is on screen is never a guess.
+ * The query controls, ordered the way a designer narrows down: which map, then
+ * which day, then which match, then what to show within it. Each one carries
+ * its count, so the scope of what is on screen is never a guess.
  */
 export function FilterRail({
   selection,

@@ -39,14 +39,14 @@ interface Scene {
 /**
  * The map canvas.
  *
- * Rendering runs on a WebGL stage rather than SVG or DOM nodes: an unfiltered
- * map carries tens of thousands of trail points, and only the GPU keeps panning
- * and playback smooth at that count.
+ * WebGL rather than SVG or DOM nodes: an unfiltered map carries tens of
+ * thousands of trail points, and only the GPU keeps panning and playback smooth
+ * at that count.
  *
- * Setup and data are deliberately split across two effects. Building the Pixi
- * application and loading the minimap is expensive and depends only on which
- * map is open; changing a filter just pushes new arrays into the existing
- * layers, so the view neither flashes nor loses its pan and zoom.
+ * Setup and data sit in separate effects. Building the Pixi application and
+ * loading the minimap is expensive and depends only on which map is open, while
+ * a filter change just pushes new arrays into the existing layers -- so the
+ * view neither flashes nor loses its pan and zoom.
  */
 export function MapStage({ data, selection }: MapStageProps) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -142,10 +142,9 @@ export function MapStage({ data, selection }: MapStageProps) {
       function onWheel(event: WheelEvent) {
         event.preventDefault()
 
-        // A trackpad pinch arrives as a wheel event with ctrlKey set, and a
-        // two-finger swipe sideways arrives as horizontal delta. Treating every
-        // wheel event as zoom made a sideways swipe do nothing, which read as
-        // the map drifting for no reason.
+        // A trackpad pinch arrives as a wheel event with ctrlKey set; a
+        // two-finger swipe arrives as horizontal delta. Treating every wheel
+        // event as zoom made sideways swipes read as the map drifting.
         const sideways = Math.abs(event.deltaX) > Math.abs(event.deltaY)
         if (sideways && !event.ctrlKey) {
           viewport.panBy(event.deltaX, event.deltaY)
@@ -386,15 +385,13 @@ export function MapStage({ data, selection }: MapStageProps) {
 /**
  * The points behind each density field.
  *
- * Kill zones plot where kills were taken from and death zones where players
- * went down -- two different questions about the same fight, and a designer
- * reading cover and sightlines needs them apart. Storm deaths count towards
- * deaths: the question is where players die, and the storm is one of the ways.
+ * Kill zones plot where kills were taken from, death zones where players went
+ * down -- two questions about the same fight, and anyone reading cover and
+ * sightlines needs them apart. Storm deaths count as deaths; the storm is just
+ * one of the ways to go down.
  *
- * During playback the field is built only from what has happened so far, the
- * same cut the trails and markers use. A field that showed the whole match
- * while the trails were still drawing would be answering a different question
- * from everything around it.
+ * During playback the field is cut at the playhead like everything else, so it
+ * never ends up answering a different question from the trails around it.
  */
 function densityPoints(
   mode: HeatmapMode,

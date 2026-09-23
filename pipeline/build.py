@@ -20,32 +20,24 @@ from PIL import Image
 from load import read_journeys
 from maps import MAPS
 
-# The source minimaps run up to 9000px square, which is far more than a browser
-# needs and slow to decode. 2048 keeps detail sharp at full zoom on the canvas.
+# Source minimaps go up to 9000px square. 2048 still looks sharp at full zoom
+# and decodes far faster.
 MINIMAP_SIZE = 2048
 MINIMAP_QUALITY = 88
 
-# World coordinates are metres. One decimal is sub-pixel at every zoom level the
-# tool offers, and dropping the rest shrinks the payload substantially.
+# Coordinates are metres, and one decimal is sub-pixel at any zoom we offer.
 COORD_PRECISION = 1
 
-# Positions are normally sampled every 5 seconds, but a small number of journeys
-# have long stretches with nothing recorded -- the worst runs over eight minutes.
-# Joining across one of those draws a straight line through terrain the player
-# may never have crossed, so the trail is broken instead. Six times the nominal
-# sample interval is well clear of ordinary jitter, which reaches 25s at the
-# 99th percentile.
+# Positions arrive every 5s, but a few journeys drop out for minutes at a time.
+# Joining across one of those invents a path, so cut the trail instead. Ordinary
+# jitter tops out near 25s, so 30s only catches real dropouts.
 TRAIL_GAP_SECONDS = 30
 
 Image.MAX_IMAGE_PIXELS = None
 
 
 def find_gaps(times: list[int]) -> list[int]:
-    """Indices where a trail should be cut because recording dropped out.
-
-    Each returned index is the first point of a new segment, so the renderer can
-    lift the pen rather than bridging a gap it has no data for.
-    """
+    """Indices where recording dropped out, each the first point of a new run."""
     return [
         i
         for i in range(1, len(times))
@@ -56,9 +48,8 @@ def find_gaps(times: list[int]) -> list[int]:
 def build_map_payload(map_key: str, rows: pd.DataFrame) -> dict:
     """Assemble one map's matches, player trails and events.
 
-    Trails are stored columnar -- parallel arrays of t/x/z rather than an array
-    of point objects. It roughly halves the JSON and drops straight into typed
-    arrays on the client.
+    Trails go out columnar -- parallel t/x/z arrays rather than point objects.
+    That roughly halves the JSON and loads straight into typed arrays.
     """
     config = MAPS[map_key]
     rows = rows.sort_values(["match_id", "user_id", "t"])
@@ -82,9 +73,8 @@ def build_map_payload(map_key: str, rows: pd.DataFrame) -> dict:
         matches.append(
             {
                 "id": match_id,
-                # The match is dated by when it actually started, not by the
-                # folder it sits in. A handful of matches run across midnight
-                # and would otherwise be filed under the wrong day.
+                # Date by actual start, not by folder: some matches run across
+                # midnight and would land on the wrong day.
                 "date": pd.to_datetime(start, unit="s").strftime("%Y-%m-%d"),
                 "start": start,
                 "duration": end - start,
@@ -107,7 +97,7 @@ def build_map_payload(map_key: str, rows: pd.DataFrame) -> dict:
                     "m": match_idx,
                     "u": user_id,
                     "b": int(bool(player_rows["is_bot"].iloc[0])),
-                    # Seconds from match start, so playback needs no date math.
+                    # Relative to match start, so playback needs no date math.
                     "t": times,
                     "x": [round(float(v), COORD_PRECISION) for v in trail["x"]],
                     "z": [round(float(v), COORD_PRECISION) for v in trail["z"]],

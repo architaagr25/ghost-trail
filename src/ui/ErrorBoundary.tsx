@@ -10,14 +10,14 @@ interface State {
 }
 
 /**
- * Catches render crashes so a failure shows something readable instead of a
- * blank page.
+ * Catches render crashes so a failure reads as a message rather than a blank
+ * page.
  *
- * The canvas layers run a lot of arithmetic over data loaded at runtime, and an
- * unhandled throw inside a React render unmounts the whole tree by design. Left
- * uncaught the analyst gets a white screen with the cause only in the console.
+ * The canvas layers do a lot of arithmetic over data loaded at runtime, and an
+ * unhandled throw in a React render unmounts the whole tree by design, leaving
+ * the cause in the console and nothing on screen.
  *
- * Still a class component: error boundaries have no hook equivalent.
+ * Still a class: error boundaries have no hook equivalent.
  */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null }

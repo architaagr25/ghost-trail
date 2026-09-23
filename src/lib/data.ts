@@ -2,9 +2,8 @@ import type { DataIndex, MapData } from './types'
 import { validateMapData } from './validate'
 
 /**
- * Every map's data is fetched whole and cached. The largest map is around
- * 300 KB over the wire, so loading it once buys instant match switching and
- * lets heatmaps aggregate across every match on the map.
+ * Each map is fetched whole and cached -- around 300 KB over the wire at worst.
+ * That buys instant match switching and heatmaps spanning every match on it.
  */
 const cache = new Map<string, Promise<MapData>>()
 
@@ -13,8 +12,7 @@ async function getJson<T>(url: string): Promise<T> {
   try {
     response = await fetch(url)
   } catch {
-    // A network failure carries a browser-specific message that says nothing
-    // useful, so it is reported as what it is from the reader's side.
+    // Browser network errors are vague and inconsistent; say what it means.
     throw new Error(`Could not reach ${url}. Check the connection and retry.`)
   }
 
@@ -50,8 +48,7 @@ export function loadMap(file: string): Promise<MapData> {
     pending = getJson<unknown>(file)
       .then(validateMapData)
       .catch((error: unknown) => {
-        // Drop the failure so a retry actually refetches rather than replaying
-        // the same rejected promise.
+        // Drop it, or Retry just replays the rejection.
         cache.delete(file)
         throw error
       })

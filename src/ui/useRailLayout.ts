@@ -12,13 +12,12 @@ interface RailLayout {
 /**
  * Open state for the two side rails, seeded from the viewport width.
  *
- * Both are reset when the viewport crosses the breakpoint, and only then --
- * anything the reader opens or closes afterwards stands until the width
- * changes again.
+ * They reset when the viewport crosses the breakpoint and only then -- anything
+ * opened or closed by hand stands until the width changes again.
  *
- * The reset is driven from the media query listener rather than from an effect
- * watching a derived boolean, so state is written in response to the external
- * event rather than during a render the change already triggered.
+ * Driven from the media query listener rather than an effect watching a derived
+ * boolean, so the write happens in response to the event rather than during a
+ * render that event already triggered.
  */
 export function useRailLayout(query: string): RailLayout {
   const [layout, setLayout] = useState(() => {
@@ -33,10 +32,9 @@ export function useRailLayout(query: string): RailLayout {
         current.wide === wide ? current : { wide, filtersOpen: wide, detailsOpen: wide },
       )
 
-    // The window can be resized between the first render and this effect
-    // running, so reconcile once before listening. Comparing inside the updater
-    // keeps the check off the current value and makes it a no-op when nothing
-    // has moved.
+    // The window can be resized between the first render and this effect, so
+    // reconcile once before listening. Comparing inside the updater keeps it a
+    // no-op when nothing has moved.
     apply(list.matches)
 
     const onChange = () => apply(list.matches)

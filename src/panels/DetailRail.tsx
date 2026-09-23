@@ -12,9 +12,8 @@ import { SurvivalChart } from './SurvivalChart'
 /**
  * Detail for whatever is currently in focus.
  *
- * Reading order runs from narrow to broad: the journey being inspected, then
- * the match it belongs to, then the key. The panel is always present so the
- * layout does not jump when a selection is made or cleared.
+ * Narrow to broad: the journey being inspected, then its match, then the key.
+ * Always present, so the layout does not jump when a selection comes or goes.
  */
 export function DetailRail({
   data,

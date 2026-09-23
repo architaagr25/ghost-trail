@@ -4,12 +4,10 @@ import { useApp } from './store'
 /**
  * Advances the playhead while playback is running.
  *
- * Driven by requestAnimationFrame against wall-clock deltas rather than a fixed
- * interval, so playback keeps real pace even when a frame is slow, and pauses
- * with the tab in the background instead of jumping forward on return.
- *
- * Time is read from the store inside the loop rather than closed over, so the
- * effect does not need to restart on every tick.
+ * rAF against wall-clock deltas rather than a fixed interval, so a slow frame
+ * does not slow the match down and a backgrounded tab pauses instead of jumping
+ * forward on return. Time is read from the store inside the loop rather than
+ * closed over, so the effect does not restart on every tick.
  */
 export function usePlayback(duration: number | null): void {
   const playing = useApp((state) => state.playing)

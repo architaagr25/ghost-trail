@@ -3,9 +3,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 /**
  * The stub a collapsed rail leaves behind.
  *
- * A rail that vanishes entirely is a rail nobody finds again, so a labelled
- * strip stays in the layout. The text runs vertically because the strip is only
- * wide enough for an icon, and the chevron points the way the panel will open.
+ * A rail that vanishes entirely is one nobody finds again, so a labelled strip
+ * stays put. The text runs vertically because the strip is only wide enough for
+ * an icon, and the chevron points the way the panel will open.
  */
 export function RailHandle({
   side,

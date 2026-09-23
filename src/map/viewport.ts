@@ -54,9 +54,9 @@ export class Viewport {
   }
 
   /**
-   * Zoom by `factor`, keeping the point under (`focusX`, `focusY`) in screen
-   * space pinned. Without that the map slides away from the cursor as you
-   * scroll, which makes it hard to zoom in on a specific building.
+   * Zoom by `factor`, pinning whatever sits under (`focusX`, `focusY`). Without
+   * it the map slides away from the cursor and picking out one building turns
+   * into a chase.
    */
   zoomBy(factor: number, focusX: number, focusY: number): void {
     const next = clamp(this.zoom * factor, MIN_ZOOM, MAX_ZOOM)
@@ -153,13 +153,13 @@ export class Viewport {
   /**
    * Keeps the map within reach without pinning it.
    *
-   * Where the map is larger than the viewport the limit is the overhang, so no
-   * empty gap can be dragged into view. Where it is smaller the limit is the
-   * leftover room, so it can still be moved around inside the frame.
+   * Larger than the viewport, the limit is the overhang, so no empty gap can be
+   * dragged in. Smaller, it is the leftover room, so the map can still be moved
+   * around inside the frame.
    *
-   * The symmetric form matters: clamping the smaller axis to zero would force
-   * the map back to centre on that axis, and cursor-anchored zoom would then
-   * snap sideways every time it tried to hold a point that is off centre.
+   * The symmetry matters: clamping the smaller axis to zero forces the map back
+   * to centre on that axis, and cursor-anchored zoom then snaps sideways every
+   * time it tries to hold a point that is off centre.
    */
   private clampPan(): void {
     const drawn = MAP_SIZE * this.scale

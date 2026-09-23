@@ -25,15 +25,14 @@ export interface Selection {
   /** Events to draw, after every filter. */
   events: GameEvent[]
   /**
-   * Events after the date, match and class filters but before the event-type
-   * checkboxes. The heatmap reads these: its mode already names which type it
-   * is plotting, so hiding kill markers should not empty the kill zone field.
+   * Filtered by date, match and class, but not by event type. The heatmap reads
+   * these -- its mode already names the type, so hiding kill markers should not
+   * empty the kill zone field.
    */
   scopedEvents: GameEvent[]
   /**
-   * Totals within the selected matches, before the class and event-type
-   * filters. These feed the toggle labels, which have to keep showing what is
-   * available to turn back on rather than what is currently showing.
+   * Totals before the class and event-type filters. The toggle labels need to
+   * show what is there to turn back on, not what is currently on.
    */
   totals: {
     humans: number
@@ -52,11 +51,10 @@ export const EMPTY_SELECTION: Selection = {
 }
 
 /**
- * Narrows a map's data down to what the filters allow.
+ * Narrows a map's data to what the filters allow, in one pass.
  *
- * Filtering happens here in one pass rather than inside the render layers. The
- * layers stay presentational, and because the panels and the map read the same
- * result, the picture and the numbers beside it cannot disagree.
+ * Keeping it out of the render layers leaves those presentational, and the map
+ * and the numbers beside it end up reading from the same result.
  */
 export function selectData(data: MapData, filters: Filters): Selection {
   const matchIndices = new Set<number>()
@@ -98,9 +96,8 @@ export function selectData(data: MapData, filters: Filters): Selection {
     players: bothClasses
       ? scopedPlayers
       : scopedPlayers.filter((player) => (player.b ? filters.showBots : filters.showHumans)),
-    // An event belongs to the actor that produced it, so hiding bots hides
-    // their kills too. Leaving them behind would show combat with no visible
-    // participant.
+    // Events belong to whoever produced them, so hiding bots hides their kills
+    // too -- otherwise there is combat on screen with nobody in it.
     events: allEvents ? byClass : byClass.filter((event) => filters.events[event.c]),
     scopedEvents: byClass,
     totals,

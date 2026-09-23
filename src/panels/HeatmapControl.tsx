@@ -24,10 +24,10 @@ const MAX_INTENSITY = 3
 /**
  * Controls for the density overlay.
  *
- * A segmented control rather than checkboxes: two fields overlaid would sum
- * into a colour that means nothing, so exactly one is on at a time and the
- * control says which. The ramp key, the intensity and the trail toggle only
- * appear once a field is on, so the map stays clear when it is not.
+ * Segmented rather than checkboxes: two fields overlaid sum into a colour that
+ * means nothing, so exactly one is on at a time. The key, the intensity and the
+ * trail toggle only appear once a field is on, keeping the panel quiet
+ * otherwise.
  */
 export function HeatmapControl({
   mode,
