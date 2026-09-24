@@ -141,7 +141,7 @@ against the match emptying out. The legend sits at the bottom of the rail.
 | Canvas | PixiJS 8 (WebGL) | 73k trail points at 60fps while panning. DOM and SVG both fall over well before that |
 | State | Zustand | Filters are read by four panels and the canvas; prop drilling would thread them through every layer |
 | Styling | Tailwind CSS 4 | Theme tokens in one file, no stylesheet to keep in sync |
-| Components | Radix UI | Accessible select, slider, popover and toggle primitives, unstyled |
+| Components | Radix UI | Accessible select, slider and popover primitives, unstyled |
 | Icons | Lucide | |
 | Pipeline | Python 3 + pandas + pyarrow + Pillow | Parquet reading and image resizing, run once offline |
 | Hosting | Vercel | Static hosting with edge caching, free tier, deploys from a push |
